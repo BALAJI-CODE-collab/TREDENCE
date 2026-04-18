@@ -1,0 +1,14 @@
+torch
+torchvision
+fastapi
+uvicorn
+python-multipart
+opencv-python
+Pillow
+rembg
+onnxruntime
+numpy
+matplotlib
+scikit-learn
+reportlab
+# logging is part of the Python standard library

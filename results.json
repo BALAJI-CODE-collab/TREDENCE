@@ -1,0 +1,51 @@
+{
+  "results": [
+    {
+      "lambda_sparse": 0.001,
+      "test_accuracy": 0.30666666666666664,
+      "sparsity_percent": 0.0,
+      "model_path": "C:\\TREDENCE\\PruneVision\\backend\\model_checkpoints\\prunevision_lambda_0_001.pt",
+      "class_names": [
+        "airplane",
+        "automobile",
+        "bird",
+        "cat",
+        "deer",
+        "dog",
+        "frog",
+        "horse",
+        "ship",
+        "truck"
+      ],
+      "history": [
+        {
+          "epoch": 1,
+          "train_loss": 2.1619354806627546,
+          "train_acc": 0.16428571428571428,
+          "sparsity": 0.0
+        },
+        {
+          "epoch": 2,
+          "train_loss": 1.948552360534668,
+          "train_acc": 0.24785714285714286,
+          "sparsity": 0.0
+        }
+      ]
+    }
+  ],
+  "best_lambda": 0.001,
+  "best_test_accuracy": 0.30666666666666664,
+  "best_sparsity_percent": 0.0,
+  "class_names": [
+    "airplane",
+    "automobile",
+    "bird",
+    "cat",
+    "deer",
+    "dog",
+    "frog",
+    "horse",
+    "ship",
+    "truck"
+  ]
+}

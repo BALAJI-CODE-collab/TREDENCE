@@ -1,0 +1,7 @@
+data/
+backend/model_checkpoints/
+__pycache__/
+*.pyc
+prunevision.db
+uploads/
+.env
