@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 import io
 import json
 import logging
@@ -61,6 +62,7 @@ class PredictResponse(BaseModel):
     model_stats: dict[str, Any] = Field(..., description="Model pruning statistics")
     upload_id: int = Field(..., description="Identifier for this upload in the portal history")
     image_url: str = Field(..., description="Public URL of stored uploaded image")
+    processed_image_b64: str = Field(..., description="Base64 encoded PNG of the preprocessed image")
     warning: Optional[str] = Field(default=None, description="Optional confidence warning")
 
 
@@ -202,6 +204,8 @@ def _serialize_preprocessing_report(report: Any) -> dict[str, Any]:
         "quality_score": report.quality_score,
         "enhancements_applied": report.enhancements_applied,
         "leaf_detected": report.leaf_detected,
+        "original_size": report.original_size,
+        "processed_size": report.processed_size,
         "processing_time_ms": report.processing_time_ms,
     }
 
@@ -393,6 +397,11 @@ async def predict(file: UploadFile = File(...)) -> PredictResponse:
         LOGGER.exception("Preprocessing failed")
         raise HTTPException(status_code=400, detail=f"Preprocessing failed: {exc}") from exc
 
+    success, encoded_image = cv2.imencode('.png', processed_image)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to encode processed image")
+    processed_image_b64 = base64.b64encode(encoded_image.tobytes()).decode('utf-8')
+
     tensor = _image_to_tensor(processed_image, app_state.device)
     app_state.model.eval()
     with torch.no_grad():
@@ -428,6 +437,7 @@ async def predict(file: UploadFile = File(...)) -> PredictResponse:
         model_stats=_build_model_stats(app_state.model, app_state.lambda_used, app_state.test_accuracy),
         upload_id=upload_id,
         image_url=f"/uploads/files/{stored_filename}",
+        processed_image_b64=processed_image_b64,
         warning=confidence_result.warning,
     )
 

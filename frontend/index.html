@@ -1,1246 +1,2883 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PruneVision - Intelligent Plant Disease Detector</title>
-  <style>
-    :root {
-      --bg: #050607;
-      --surface: #0c1010;
-      --card: rgba(255, 255, 255, 0.025);
-      --card-strong: rgba(255, 255, 255, 0.055);
-      --primary: #73ff98;
-      --secondary: #00d56f;
-      --accent: #b8ff55;
-      --text: #eff7ef;
-      --muted: #8aa090;
-      --danger: #ff4d4d;
-      --warning: #ffd84d;
-      --success: #00ff88;
-      --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
-      --radius-xl: 28px;
-      --radius-lg: 22px;
-      --radius-md: 16px;
-      --radius-sm: 12px;
-      --border: 1px solid rgba(127, 255, 0, 0.18);
-      --transition: 240ms ease;
-      --glow: 0 0 22px rgba(115, 255, 152, 0.42), 0 0 52px rgba(115, 255, 152, 0.16);
-      --max-width: 1240px;
-      --hero-height: 100vh;
-      --step-delay: 800ms;
-    }
-
-    * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top, rgba(115, 255, 152, 0.08), transparent 34%),
-        radial-gradient(circle at 100% 0%, rgba(184, 255, 85, 0.05), transparent 22%),
-        radial-gradient(circle at bottom right, rgba(115, 255, 152, 0.06), transparent 30%),
-        var(--bg);
-      color: var(--text);
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      overflow-x: hidden;
-    }
-
-    canvas#networkCanvas {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-      opacity: 0.48;
-    }
-
-    .app-shell { position: relative; z-index: 1; }
-    .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 12;
-      padding: 16px 20px;
-      backdrop-filter: blur(18px);
-      background: linear-gradient(180deg, rgba(5, 6, 7, 0.84), rgba(5, 6, 7, 0.2));
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    .topbar-inner {
-      width: min(var(--max-width), 100%);
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-    }
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      color: var(--text);
-    }
-    .brand-mark {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: #041108;
-      font-weight: 800;
-      box-shadow: 0 0 26px rgba(115, 255, 152, 0.18);
-      flex: 0 0 auto;
-    }
-    .brand-text { display: grid; gap: 2px; }
-    .brand-text strong { font-size: 0.95rem; letter-spacing: 0.06em; text-transform: uppercase; }
-    .brand-text span { font-size: 0.82rem; color: var(--muted); }
-    .topnav { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
-    .topnav a {
-      color: var(--muted);
-      text-decoration: none;
-      font-size: 0.92rem;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid transparent;
-      transition: color var(--transition), border-color var(--transition), background var(--transition);
-    }
-    .topnav a:hover {
-      color: var(--text);
-      border-color: rgba(115, 255, 152, 0.2);
-      background: rgba(115, 255, 152, 0.05);
-    }
-    .section { width: 100%; padding: 0 20px; }
-    .container { width: min(var(--max-width), 100%); margin: 0 auto; }
-    .hero {
-      min-height: var(--hero-height);
-      display: grid;
-      place-items: center;
-      text-align: center;
-      position: relative;
-      padding: 128px 20px 120px;
-    }
-    .hero-inner { max-width: 960px; display: grid; gap: 22px; animation: fadeUp 900ms ease both; }
-    .hero-title {
-      font-size: clamp(3.2rem, 10vw, 8rem);
-      line-height: 0.9;
-      letter-spacing: 0.02em;
-      margin: 0;
-      text-shadow: var(--glow);
-    }
-    .hero-kicker {
-      margin: 0 auto;
-      width: fit-content;
-      padding: 8px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(115, 255, 152, 0.18);
-      background: rgba(115, 255, 152, 0.06);
-      color: var(--primary);
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      font-size: 0.75rem;
-      font-weight: 700;
-    }
-    .hero-subtitle { margin: 0 auto; max-width: 760px; font-size: clamp(1rem, 2vw, 1.28rem); color: var(--muted); line-height: 1.7; }
-    .hero-actions {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-    .hero-stats {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 8px;
-      width: min(100%, 880px);
-      margin-left: auto;
-      margin-right: auto;
-    }
-    .hero-stat {
-      padding: 16px 18px;
-      border-radius: var(--radius-lg);
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      text-align: left;
-    }
-    .hero-stat strong { display: block; font-size: 1.2rem; margin-bottom: 4px; }
-    .hero-stat span { color: var(--muted); font-size: 0.92rem; }
-    .scroll-indicator {
-      margin: 24px auto 0;
-      width: 42px;
-      height: 42px;
-      border: 1px solid rgba(0, 255, 136, 0.3);
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-      color: var(--primary);
-      animation: bounce 1.9s infinite;
-    }
-    .content-stack { display: grid; gap: 28px; padding-bottom: 80px; }
-    .section-shell {
-      width: min(var(--max-width), 100%);
-      margin: 0 auto;
-      padding: 76px 0 34px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
-      text-align: center;
-    }
-    .glass-card {
-      position: relative;
-      overflow: hidden;
-      background: var(--card);
-      backdrop-filter: blur(18px);
-      border: var(--border);
-      border-radius: var(--radius-xl);
-      box-shadow: var(--shadow);
-      animation: floatCard 3s ease-in-out infinite;
-    }
-    .glass-card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      pointer-events: none;
-      background: linear-gradient(120deg, transparent 15%, rgba(0, 255, 136, 0.15), transparent 55%);
-      transform: translateX(-100%);
-      opacity: 0.8;
-    }
-    .glass-card:hover::before { animation: shimmer 1.35s linear; }
-    .upload-card { padding: 28px; }
-    .upload-layout { display: grid; gap: 18px; }
-    .upload-dropzone {
-      position: relative;
-      min-height: 330px;
-      display: grid;
-      place-items: center;
-      text-align: center;
-      padding: 28px;
-      border-radius: calc(var(--radius-xl) - 4px);
-      background: linear-gradient(180deg, rgba(13, 26, 13, 0.88), rgba(13, 26, 13, 0.6));
-      cursor: pointer;
-      isolation: isolate;
-    }
-    .upload-dropzone input { display: none; }
-    .upload-dropzone:hover { transform: translateY(-2px); }
-    .upload-copy { display: grid; gap: 10px; max-width: 520px; z-index: 2; }
-    .upload-headline { margin: 0; font-size: clamp(1.5rem, 3vw, 2.2rem); }
-    .upload-body { margin: 0; color: var(--muted); line-height: 1.6; }
-    .border-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-    .border-svg rect { fill: none; stroke: var(--primary); stroke-width: 2; stroke-dasharray: 14 10; animation: dashOffset 4s linear infinite; }
-    .preview-wrap { width: min(100%, 640px); margin: 0 auto; display: none; gap: 12px; }
-    .preview-frame {
-      position: relative;
-      overflow: hidden;
-      border-radius: var(--radius-lg);
-      border: 1px solid rgba(0, 255, 136, 0.22);
-      background: rgba(0, 0, 0, 0.25);
-      min-height: 280px;
-      display: grid;
-      place-items: center;
-    }
-    .preview-frame img { width: 100%; max-height: 340px; object-fit: contain; display: block; }
-    .scan-line {
-      position: absolute;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 4px;
-      background: linear-gradient(90deg, transparent, var(--primary), transparent);
-      box-shadow: 0 0 18px rgba(0, 255, 136, 0.6);
-      animation: scan 2.8s linear infinite;
-      pointer-events: none;
-    }
-    .meta-row {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      color: var(--muted);
-      font-size: 0.95rem;
-      flex-wrap: wrap;
-    }
-    .button-row { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
-    .primary-button,
-    .ghost-button {
-      appearance: none;
-      border: none;
-      cursor: pointer;
-      padding: 14px 20px;
-      border-radius: 999px;
-      font-weight: 700;
-      font-size: 1rem;
-      letter-spacing: 0.02em;
-      transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
-      position: relative;
-      overflow: hidden;
-    }
-    .primary-button { color: #031003; background: linear-gradient(135deg, var(--primary), var(--secondary)); box-shadow: 0 12px 28px rgba(0, 255, 136, 0.2); }
-    .ghost-button { color: var(--text); background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(0, 255, 136, 0.22); }
-    .primary-button::after,
-    .ghost-button::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      transform: translateX(-120%);
-      background: linear-gradient(120deg, transparent 30%, rgba(255, 255, 255, 0.35), transparent 60%);
-    }
-    .primary-button:hover::after,
-    .ghost-button:hover::after { animation: shimmer 1.1s ease; }
-    .primary-button:hover,
-    .ghost-button:hover { transform: translateY(-2px); }
-    .steps-panel,
-    .results-panel,
-    .portal-panel,
-    .intelligence-panel,
-    .how-panel { padding: 28px; }
-    .panel-title { margin: 0 0 18px; font-size: clamp(1.4rem, 2.6vw, 2rem); }
-    .section-label {
-      margin: 0 0 12px;
-      color: var(--primary);
-      text-transform: uppercase;
-      letter-spacing: 0.18em;
-      font-size: 0.76rem;
-      font-weight: 800;
-    }
-    .section-title {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 3.4rem);
-      line-height: 1;
-      letter-spacing: 0.01em;
-    }
-    .section-copy {
-      max-width: 780px;
-      margin: 14px auto 0;
-      color: var(--muted);
-      font-size: 1rem;
-      line-height: 1.7;
-    }
-    .processing-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-    .step-pill {
-      padding: 16px;
-      border-radius: var(--radius-md);
-      background: var(--card-strong);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-height: 92px;
-      position: relative;
-      overflow: hidden;
-      animation: floatCard 3s ease-in-out infinite;
-    }
-    .step-pill.active { border-color: rgba(0, 255, 136, 0.45); box-shadow: inset 0 0 0 1px rgba(0, 255, 136, 0.18); }
-    .step-pill.done { background: rgba(0, 255, 136, 0.08); }
-    .step-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: rgba(0, 255, 136, 0.1);
-      color: var(--primary);
-      flex: 0 0 auto;
-    }
-    .spinner {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 2px solid rgba(224, 255, 224, 0.2);
-      border-top-color: var(--primary);
-      animation: spin 0.9s linear infinite;
-    }
-    .checkmark { display: none; width: 18px; height: 18px; color: var(--primary); }
-    .step-pill.done .spinner { display: none; }
-    .step-pill.done .checkmark { display: block; }
-    .results-panel { display: none; transform: translateY(40px); opacity: 0; }
-    .results-panel.revealed { display: block; animation: slideUp 600ms ease forwards; }
-    .results-grid { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 16px; }
-    .result-card {
-      padding: 22px;
-      border-radius: var(--radius-lg);
-      background: var(--card-strong);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      min-height: 280px;
-      display: grid;
-      gap: 14px;
-      animation: floatCard 3s ease-in-out infinite;
-    }
-    .result-label { margin: 0; color: var(--muted); font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.12em; }
-    .disease-name { margin: 0; font-size: clamp(1.7rem, 4vw, 2.8rem); line-height: 1.05; }
-    .status-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 999px; font-size: 0.92rem; font-weight: 700; width: fit-content; }
-    .status-high { background: rgba(0, 255, 136, 0.12); color: var(--success); }
-    .status-medium { background: rgba(255, 216, 77, 0.12); color: var(--warning); }
-    .status-low { background: rgba(255, 77, 77, 0.12); color: var(--danger); }
-    .confidence-ring { width: 170px; height: 170px; margin: 0 auto; display: block; }
-    .ring-track { stroke: rgba(255, 255, 255, 0.08); fill: none; stroke-width: 14; }
-    .ring-progress {
-      stroke: var(--primary);
-      fill: none;
-      stroke-width: 14;
-      stroke-linecap: round;
-      transform-origin: center;
-      transform: rotate(-90deg);
-      transition: stroke-dashoffset 1.2s ease;
-      filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.45));
-    }
-    .ring-center { font-size: 1.15rem; fill: var(--text); font-weight: 700; }
-    .metric-stack { display: grid; gap: 10px; }
-    .score-rail {
-      position: relative;
-      height: 180px;
-      width: 28px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.06);
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .score-fill {
-      position: absolute;
-      inset: auto 0 0 0;
-      background: linear-gradient(180deg, var(--primary), var(--secondary));
-      height: 0%;
-      transition: height 1s ease;
-    }
-    .tag-list { display: flex; gap: 8px; flex-wrap: wrap; }
-    .tag { padding: 7px 12px; border-radius: 999px; background: rgba(0, 255, 136, 0.08); color: var(--primary); font-size: 0.85rem; border: 1px solid rgba(0, 255, 136, 0.12); }
-    .bar-wrap { display: grid; gap: 8px; }
-    .bar-track { height: 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
-    .bar-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width 1s ease; }
-    .warning-banner { display: none; padding: 14px 16px; border-radius: var(--radius-md); background: rgba(255, 216, 77, 0.1); border: 1px solid rgba(255, 216, 77, 0.2); color: var(--warning); animation: pulseWarn 1.8s ease-in-out infinite; }
-    .portal-controls {
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-bottom: 14px;
-    }
-    .folder-pill {
-      padding: 10px 14px;
-      border-radius: 999px;
-      border: 1px solid rgba(0, 255, 136, 0.25);
-      color: var(--muted);
-      font-size: 0.9rem;
-      background: rgba(0, 255, 136, 0.06);
-    }
-    .portal-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px;
-    }
-    .upload-item {
-      background: var(--card-strong);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: var(--radius-lg);
-      overflow: hidden;
-      display: grid;
-      min-height: 260px;
-      animation: floatCard 3s ease-in-out infinite;
-    }
-    .upload-thumb {
-      width: 100%;
-      height: 170px;
-      object-fit: cover;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(0, 0, 0, 0.3);
-    }
-    .upload-body-card {
-      padding: 12px;
-      display: grid;
-      gap: 8px;
-    }
-    .upload-title {
-      margin: 0;
-      font-size: 0.95rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .upload-meta {
-      margin: 0;
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
-    .upload-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .portal-empty {
-      border: 1px dashed rgba(0, 255, 136, 0.3);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      text-align: center;
-      color: var(--muted);
-    }
-    .model-intel-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-    .stat-card {
-      padding: 22px;
-      border-radius: var(--radius-lg);
-      background: var(--card-strong);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      min-height: 160px;
-      display: grid;
-      gap: 10px;
-      position: relative;
-      animation: floatCard 3s ease-in-out infinite;
-    }
-    .tooltip {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      font-size: 0.8rem;
-      background: rgba(0, 255, 136, 0.12);
-      color: var(--primary);
-      border: 1px solid rgba(0, 255, 136, 0.22);
-      margin-left: 8px;
-      cursor: help;
-    }
-    .how-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-    .how-card {
-      padding: 22px;
-      border-radius: var(--radius-lg);
-      background: var(--card-strong);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      min-height: 180px;
-      display: grid;
-      gap: 10px;
-      transform: translateY(24px);
-      opacity: 0;
-      transition: opacity 700ms ease, transform 700ms ease;
-    }
-    .how-card.visible { transform: translateY(0); opacity: 1; animation: floatCard 3s ease-in-out infinite; }
-    .how-icon {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: rgba(0, 255, 136, 0.09);
-      color: var(--primary);
-      font-size: 1.15rem;
-    }
-    .toast-stack { position: fixed; top: 20px; right: 20px; display: grid; gap: 10px; z-index: 20; }
-    .toast {
-      min-width: 280px;
-      max-width: 360px;
-      padding: 14px 16px;
-      border-radius: var(--radius-md);
-      background: rgba(13, 26, 13, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: var(--shadow);
-      transform: translateX(120%);
-      opacity: 0;
-      animation: toastIn 300ms ease forwards;
-    }
-    .toast.success { border-color: rgba(0, 255, 136, 0.2); }
-    .toast.error { border-color: rgba(255, 77, 77, 0.2); }
-    .toast.info { border-color: rgba(127, 255, 0, 0.2); }
-    .toast-title { margin: 0 0 4px; font-weight: 700; }
-    .toast-body { margin: 0; color: var(--muted); font-size: 0.92rem; }
-    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 700ms ease, transform 700ms ease; }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-    @keyframes floatCard { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
-    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
-    @keyframes dashOffset { to { stroke-dashoffset: -60; } }
-    @keyframes scan { 0% { transform: translateY(0); opacity: 0.15; } 10% { opacity: 1; } 50% { opacity: 1; } 100% { transform: translateY(100%); opacity: 0.15; } }
-    @keyframes shimmer { from { transform: translateX(-120%); } to { transform: translateX(120%); } }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    @keyframes pulseWarn { 0%, 100% { box-shadow: 0 0 0 rgba(255, 216, 77, 0); } 50% { box-shadow: 0 0 18px rgba(255, 216, 77, 0.12); } }
-    @keyframes toastIn { to { transform: translateX(0); opacity: 1; } }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-    @media (max-width: 1100px) {
-      .hero-stats,
-      .processing-steps,
-      .results-grid,
-      .portal-grid,
-      .model-intel-grid,
-      .how-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 700px) {
-      .topbar { padding: 12px 14px; }
-      .topbar-inner { flex-direction: column; align-items: flex-start; }
-      .topnav { justify-content: flex-start; }
-      .hero { padding-top: 104px; }
-      .hero-stats,
-      .processing-steps,
-      .results-grid,
-      .portal-grid,
-      .model-intel-grid,
-      .how-grid { grid-template-columns: 1fr; }
-      .upload-card,
-      .steps-panel,
-      .results-panel,
-      .portal-panel,
-      .intelligence-panel,
-      .how-panel { padding: 20px; }
-      .upload-dropzone { min-height: 280px; }
-      .button-row { flex-direction: column; }
-      .primary-button,
-      .ghost-button { width: 100%; }
-      .toast-stack { left: 16px; right: 16px; }
-      .toast { min-width: 0; width: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <canvas id="networkCanvas"></canvas>
-  <div class="toast-stack" id="toastStack"></div>
-
-  <main class="app-shell">
-    <header class="topbar">
-      <div class="topbar-inner">
-        <a class="brand" href="#heroSection">
-          <div class="brand-mark">P</div>
-          <div class="brand-text">
-            <strong>PruneVision</strong>
-            <span>Intelligent Plant Disease Detector</span>
-          </div>
-        </a>
-        <nav class="topnav" aria-label="Primary">
-          <a href="#uploadSection">Upload</a>
-          <a href="#resultsSection">Results</a>
-          <a href="#portalSection">Portal</a>
-          <a href="#intelSection">Model</a>
-          <a href="#howSection">How It Works</a>
-        </nav>
-      </div>
-    </header>
-
-    <section class="section hero reveal" id="heroSection">
-      <div class="container hero-inner">
-        <p class="hero-kicker">Plant intelligence interface</p>
-        <h1 class="hero-title">PruneVision</h1>
-        <p class="hero-subtitle">A clean, immersive analysis workspace for plant disease detection, upload history, and downloadable reports.</p>
-        <div class="hero-actions">
-          <a class="primary-button" href="#uploadSection">Start Analysis</a>
-          <a class="ghost-button" href="#portalSection">Open Portal</a>
-        </div>
-        <div class="hero-stats">
-          <div class="hero-stat"><strong>Fast Upload</strong><span>Drop a leaf image and launch the pipeline in one step.</span></div>
-          <div class="hero-stat"><strong>Portal History</strong><span>Review every prediction with image previews and PDF export.</span></div>
-          <div class="hero-stat"><strong>Self-Pruning AI</strong><span>See confidence, sparsity, and preprocessing details instantly.</span></div>
-        </div>
-        <div class="scroll-indicator" aria-hidden="true">↓</div>
-      </div>
-    </section>
-
-    <section class="section reveal" id="uploadSection">
-      <div class="section-shell">
-        <p class="section-label">Upload</p>
-        <h2 class="section-title">Place to start</h2>
-        <p class="section-copy">The interface is intentionally minimal: upload the leaf, inspect the result, and move down the page as each layer of the analysis becomes visible.</p>
-      </div>
-      <div class="container content-stack">
-      <div class="glass-card upload-card">
-        <div class="upload-layout">
-          <div class="upload-dropzone" id="dropzone">
-            <svg class="border-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <rect x="1" y="1" width="98" height="98" rx="18" ry="18"></rect>
-            </svg>
-            <input type="file" id="fileInput" accept="image/*" />
-            <div class="upload-copy" id="uploadCopy">
-              <h2 class="upload-headline">Drop a plant leaf image here</h2>
-              <p class="upload-body">The preprocessor will check image quality, enhance the frame, detect the leaf, and run the pruned AI model.</p>
-              <div class="button-row">
-                <button class="ghost-button" id="browseButton">Browse Files</button>
-              </div>
-            </div>
-            <div class="preview-wrap" id="previewWrap">
-              <div class="preview-frame">
-                <div class="scan-line"></div>
-                <img id="previewImage" alt="Plant preview" />
-              </div>
-              <div class="meta-row">
-                <span id="fileName"></span>
-                <span id="fileSize"></span>
-              </div>
-            </div>
-          </div>
-          <div class="button-row" id="analyzeRow" style="display:none; justify-content:center;">
-            <button class="primary-button" id="analyzeButton">Analyze Plant</button>
-          </div>
-        </div>
-      </div>
-      </div>
-    </section>
-
-    <section class="section reveal" id="stepsSection">
-      <div class="section-shell">
-        <p class="section-label">Pipeline</p>
-        <h2 class="section-title">Four stage analysis</h2>
-        <p class="section-copy">The upload flows through quality checks, enhancement, leaf isolation, and the pruned network, with each stage surfaced as a visible state.</p>
-      </div>
-      <div class="container content-stack">
-      <div class="glass-card steps-panel">
-        <h2 class="panel-title">Processing Steps</h2>
-        <div class="processing-steps" id="processingSteps">
-          <div class="step-pill" data-step="0"><div class="step-icon">1</div><div><strong>Quality Check</strong><div class="spinner"></div><svg class="checkmark" viewBox="0 0 24 24"><path fill="currentColor" d="M9.2 16.2 4.8 11.8l1.4-1.4 3 3 8.6-8.6 1.4 1.4z"/></svg></div></div>
-          <div class="step-pill" data-step="1"><div class="step-icon">2</div><div><strong>Enhancing Image</strong><div class="spinner"></div><svg class="checkmark" viewBox="0 0 24 24"><path fill="currentColor" d="M9.2 16.2 4.8 11.8l1.4-1.4 3 3 8.6-8.6 1.4 1.4z"/></svg></div></div>
-          <div class="step-pill" data-step="2"><div class="step-icon">3</div><div><strong>Detecting Leaf</strong><div class="spinner"></div><svg class="checkmark" viewBox="0 0 24 24"><path fill="currentColor" d="M9.2 16.2 4.8 11.8l1.4-1.4 3 3 8.6-8.6 1.4 1.4z"/></svg></div></div>
-          <div class="step-pill" data-step="3"><div class="step-icon">4</div><div><strong>Running AI Model</strong><div class="spinner"></div><svg class="checkmark" viewBox="0 0 24 24"><path fill="currentColor" d="M9.2 16.2 4.8 11.8l1.4-1.4 3 3 8.6-8.6 1.4 1.4z"/></svg></div></div>
-        </div>
-      </div>
-      </div>
-    </section>
-
-    <section class="section reveal" id="resultsSection">
-      <div class="section-shell">
-        <p class="section-label">Results</p>
-        <h2 class="section-title">Prediction outcome</h2>
-        <p class="section-copy">Once inference completes, the key result, confidence, preprocessing score, and model state appear in one cohesive panel.</p>
-      </div>
-      <div class="container content-stack">
-      <div class="glass-card results-panel" id="resultsPanel">
-        <h2 class="panel-title">Prediction Results</h2>
-        <div class="results-grid">
-          <div class="result-card">
-            <p class="result-label">Disease Name</p>
-            <h3 class="disease-name" id="resultLabel">Awaiting analysis</h3>
-            <div class="status-badge status-high" id="confidenceBadge">Idle</div>
-            <svg class="confidence-ring" viewBox="0 0 180 180">
-              <circle class="ring-track" cx="90" cy="90" r="68"></circle>
-              <circle class="ring-progress" id="confidenceRing" cx="90" cy="90" r="68"></circle>
-              <text class="ring-center" x="90" y="95" text-anchor="middle" id="confidenceText">0%</text>
-            </svg>
-          </div>
-          <div class="result-card">
-            <p class="result-label">Preprocessing Report</p>
-            <div class="metric-stack">
-              <div style="display:flex; gap:16px; align-items:flex-end;">
-                <div class="score-rail"><div class="score-fill" id="qualityFill"></div></div>
-                <div>
-                  <div style="font-size:2rem; font-weight:700;" id="qualityScore">0</div>
-                  <div style="color:var(--muted);">Quality Score</div>
+<html lang="en" class="dark">
+    <head>
+        <meta charSet="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <link rel="preconnect" href="https://fonts.googleapis.com"/>
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous"/>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+        <meta name="theme-color" content="#08100f"/>
+        <title>PruneVision - Intelligent Plant Disease Detector</title>
+        <meta name="description" content="PruneVision brings AI-driven plant disease detection to the web with self-pruning models, automated preprocessing, and upload history tracking."/>
+        <meta name="keywords" content="plant disease detection, AI plant diagnosis, leaf health, self-pruning neural network, PruneVision, crop health analytics"/>
+        <meta name="author" content="PruneVision"/>
+        <link rel="canonical" href="http://localhost:8000"/>
+        <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large"/>
+        <meta property="og:type" content="website"/>
+        <meta property="og:title" content="PruneVision - Intelligent Plant Disease Detector"/>
+        <meta property="og:description" content="Fast, intelligent plant disease detection with automatic image preprocessing, model sparsity metrics, and upload history."/>
+        <meta property="og:url" content="http://localhost:8000"/>
+        <meta property="og:image" content="https://via.placeholder.com/1200x630/0a0a0a/00ff88?text=PruneVision"/>
+        <meta property="og:site_name" content="PruneVision"/>
+        <meta property="og:image:type" content="image/png"/>
+        <meta property="og:image:width" content="1200"/>
+        <meta property="og:image:height" content="630"/>
+        <meta name="twitter:card" content="summary_large_image"/>
+        <meta name="twitter:url" content="http://localhost:8000"/>
+        <meta name="twitter:title" content="PruneVision - Intelligent Plant Disease Detector"/>
+        <meta name="twitter:description" content="Fast, intelligent plant disease detection with automatic preprocessing, model sparsity metrics, and upload history."/>
+        <meta name="twitter:image" content="https://via.placeholder.com/1200x630/0a0a0a/00ff88?text=PruneVision"/>
+        <script type="application/ld+json">
+        {
+          "@context": "https://schema.org",
+          "@type": "WebApplication",
+          "name": "PruneVision",
+          "url": "http://localhost:8000",
+          "description": "AI-powered plant disease detection with self-pruning networks and image quality-aware preprocessing.",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "image": "https://via.placeholder.com/1200x630/0a0a0a/00ff88?text=PruneVision"
+        }
+        </script>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>PV</text></svg>" sizes="48x48" type="image/svg+xml"/>
+        <style>
+            :root {
+                --max-width: 1280px;
+                --hero-height: 100vh;
+                --transition: 0.2s ease;
+                --radius-sm: 4px;
+                --radius-md: 8px;
+                --radius-lg: 12px;
+                --radius-xl: 16px;
+                --glow: 0 0 40px rgba(0, 255, 136, 0.3);
+                --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                --text: #ededed;
+                --muted: #a3a3a3;
+                --primary: #00ff88;
+                --secondary: #73ff98;
+                --accent: #83ffb5;
+                --success: #00ff88;
+                --warning: #ffd94d;
+                --danger: #ff4d4d;
+                --bg: #050a05;
+                --surface: #0d1a0d;
+                --card: rgba(255, 255, 255, 0.02);
+                --card-strong: rgba(255, 255, 255, 0.04);
+                --border: 1px solid rgba(127, 255, 0, 0.18);
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            html {
+                font-family: 'Inter', sans-serif;
+                font-size: 16px;
+                line-height: 1.5;
+                color: var(--text);
+                background: #050607;
+                scroll-behavior: smooth;
+            }
+            body {
+                overflow-x: hidden;
+            }
+            .app-shell {
+                position: relative;
+                z-index: 1;
+            }
+            .topbar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                z-index: 12;
+                padding: 16px 20px;
+                backdrop-filter: blur(18px);
+                background: linear-gradient(180deg, rgba(5, 6, 7, 0.84), rgba(5, 6, 7, 0.2));
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .topbar-inner {
+                width: min(var(--max-width), 100%);
+                margin: 0 auto;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 16px;
+            }
+            .brand {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                text-decoration: none;
+                color: var(--text);
+            }
+            .brand-mark {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                color: #041108;
+                font-weight: 800;
+                box-shadow: 0 0 26px rgba(115, 255, 152, 0.18);
+                flex: 0 0 auto;
+            }
+            .brand-text {
+                display: grid;
+                gap: 2px;
+            }
+            .brand-text strong {
+                font-size: 0.95rem;
+                letter-spacing: 0.06em;
+                text-transform: uppercase;
+            }
+            .brand-text span {
+                font-size: 0.82rem;
+                color: var(--muted);
+            }
+            .topnav {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+            .topnav a {
+                color: var(--muted);
+                text-decoration: none;
+                font-size: 0.92rem;
+                padding: 8px 12px;
+                border-radius: 999px;
+                border: 1px solid transparent;
+                transition: color var(--transition), border-color var(--transition), background var(--transition);
+            }
+            .topnav a:hover {
+                color: var(--text);
+                border-color: rgba(115, 255, 152, 0.2);
+                background: rgba(115, 255, 152, 0.05);
+            }
+            .section {
+                width: 100%;
+                padding: 0 20px;
+            }
+            .container {
+                width: min(var(--max-width), 100%);
+                margin: 0 auto;
+            }
+            .hero {
+                min-height: var(--hero-height);
+                display: grid;
+                place-items: center;
+                text-align: center;
+                position: relative;
+                padding: 128px 20px 120px;
+            }
+            .hero-inner {
+                max-width: 960px;
+                display: grid;
+                gap: 22px;
+                animation: fadeUp 900ms ease both;
+            }
+            .hero-title {
+                font-size: clamp(3.2rem, 10vw, 8rem);
+                line-height: 0.9;
+                letter-spacing: 0.02em;
+                margin: 0;
+                text-shadow: var(--glow);
+            }
+            .hero-kicker {
+                margin: 0 auto;
+                width: fit-content;
+                padding: 8px 14px;
+                border-radius: 999px;
+                border: 1px solid rgba(115, 255, 152, 0.18);
+                background: rgba(115, 255, 152, 0.06);
+                color: var(--primary);
+                letter-spacing: 0.16em;
+                text-transform: uppercase;
+                font-size: 0.75rem;
+                font-weight: 700;
+            }
+            .hero-subtitle {
+                margin: 0 auto;
+                max-width: 760px;
+                font-size: clamp(1rem, 2vw, 1.28rem);
+                color: var(--muted);
+                line-height: 1.7;
+            }
+            .hero-actions {
+                display: flex;
+                justify-content: center;
+                gap: 12px;
+                flex-wrap: wrap;
+                margin-top: 10px;
+            }
+            .hero-stats {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 12px;
+                margin-top: 8px;
+                width: min(100%, 880px);
+                margin-left: auto;
+                margin-right: auto;
+            }
+            .hero-stat {
+                padding: 16px 18px;
+                border-radius: var(--radius-lg);
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                text-align: left;
+            }
+            .hero-stat strong {
+                display: block;
+                font-size: 1.2rem;
+                margin-bottom: 4px;
+            }
+            .hero-stat span {
+                color: var(--muted);
+                font-size: 0.92rem;
+            }
+            .scroll-indicator {
+                margin: 24px auto 0;
+                width: 42px;
+                height: 42px;
+                border: 1px solid rgba(0, 255, 136, 0.3);
+                border-radius: 999px;
+                display: grid;
+                place-items: center;
+                color: var(--primary);
+                animation: bounce 1.9s infinite;
+            }
+            .content-stack {
+                display: grid;
+                gap: 28px;
+                padding-bottom: 80px;
+            }
+            .section-shell {
+                width: min(var(--max-width), 100%);
+                margin: 0 auto;
+                padding: 76px 0 34px;
+                border-top: 1px solid rgba(255, 255, 255, 0.06);
+                text-align: center;
+            }
+            .glass-card {
+                position: relative;
+                overflow: hidden;
+                background: var(--card);
+                backdrop-filter: blur(18px);
+                border: var(--border);
+                border-radius: var(--radius-xl);
+                box-shadow: var(--shadow);
+                animation: floatCard 3s ease-in-out infinite;
+            }
+            .glass-card::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                pointer-events: none;
+                background: linear-gradient(120deg, transparent 15%, rgba(0, 255, 136, 0.15), transparent 55%);
+                transform: translateX(-100%);
+                opacity: 0.8;
+            }
+            .glass-card:hover::before {
+                animation: shimmer 1.35s linear;
+            }
+            .upload-card {
+                padding: 28px;
+            }
+            .upload-layout {
+                display: grid;
+                gap: 18px;
+            }
+            .upload-dropzone {
+                position: relative;
+                min-height: 330px;
+                display: grid;
+                place-items: center;
+                text-align: center;
+                padding: 28px;
+                border-radius: calc(var(--radius-xl) - 4px);
+                background: linear-gradient(180deg, rgba(13, 26, 13, 0.88), rgba(13, 26, 13, 0.6));
+                cursor: pointer;
+                isolation: isolate;
+                transition: background 0.3s ease, transform 0.3s ease, color 0.3s ease;
+            }
+            .upload-dropzone input {
+                display: none;
+            }
+            .upload-dropzone:hover {
+                transform: translateY(-2px);
+                background: rgba(255, 255, 255, 0.92);
+                color: #111;
+            }
+            .upload-dropzone:hover .upload-headline,
+            .upload-dropzone:hover .upload-copy p,
+            .upload-dropzone:hover #fileStatus {
+                color: #111;
+            }
+            .upload-copy {
+                display: grid;
+                gap: 10px;
+                max-width: 520px;
+                z-index: 2;
+            }
+            .upload-headline {
+                margin: 0;
+                font-size: clamp(1.5rem, 3vw, 2.2rem);
+            }
+            .upload-copy p {
+                margin: 0;
+                color: var(--muted);
+                line-height: 1.6;
+            }
+            .border-svg {
+                position: absolute;
+                inset: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+            .border-svg rect {
+                fill: none;
+                stroke: var(--primary);
+                stroke-width: 2;
+                stroke-dasharray: 14 10;
+                animation: dashOffset 4s linear infinite;
+            }
+            .preview-wrap {
+                width: min(100%, 640px);
+                margin: 0 auto;
+                display: none;
+                gap: 12px;
+            }
+            .preview-frame {
+                position: relative;
+                overflow: hidden;
+                border-radius: var(--radius-lg);
+                border: 1px solid rgba(0, 255, 136, 0.22);
+                background: rgba(0, 0, 0, 0.25);
+                min-height: 280px;
+                display: grid;
+                place-items: center;
+            }
+            .preview-frame img {
+                width: 100%;
+                max-height: 340px;
+                object-fit: contain;
+                display: block;
+            }
+            .scan-line {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 4px;
+                background: linear-gradient(90deg, transparent, var(--primary), transparent);
+                box-shadow: 0 0 18px rgba(0, 255, 136, 0.6);
+                animation: scan 2.8s linear infinite;
+                pointer-events: none;
+            }
+            .meta-row {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                color: var(--muted);
+                font-size: 0.95rem;
+                flex-wrap: wrap;
+            }
+            .button-row {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .primary-button, .ghost-button {
+                appearance: none;
+                border: none;
+                cursor: pointer;
+                padding: 14px 20px;
+                border-radius: 999px;
+                font-weight: 700;
+                font-size: 1rem;
+                letter-spacing: 0.02em;
+                transition: transform var(--transition), box-shadow var(--transition), background var(--transition);
+                position: relative;
+                overflow: hidden;
+            }
+            .primary-button {
+                color: #031003;
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                box-shadow: 0 12px 28px rgba(0, 255, 136, 0.2);
+            }
+            .ghost-button {
+                color: var(--text);
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(0, 255, 136, 0.22);
+            }
+            .primary-button::after, .ghost-button::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                transform: translateX(-120%);
+                background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent 60%);
+            }
+            .primary-button:hover::after, .ghost-button:hover::after {
+                animation: shimmer 1.1s ease;
+            }
+            .primary-button:hover, .ghost-button:hover {
+                transform: translateY(-2px);
+            }
+            .steps-panel, .results-panel, .portal-panel, .intelligence-panel, .how-panel {
+                padding: 28px;
+            }
+            .panel-title {
+                margin: 0 0 18px;
+                font-size: clamp(1.4rem, 2.6vw, 2rem);
+            }
+            .section-label {
+                margin: 0 0 12px;
+                color: var(--primary);
+                text-transform: uppercase;
+                letter-spacing: 0.18em;
+                font-size: 0.76rem;
+                font-weight: 800;
+            }
+            .section-title {
+                margin: 0;
+                font-size: clamp(2rem, 4vw, 3.4rem);
+                line-height: 1;
+                letter-spacing: 0.01em;
+            }
+            .section-copy {
+                max-width: 780px;
+                margin: 14px auto 0;
+                color: var(--muted);
+                font-size: 1rem;
+                line-height: 1.7;
+            }
+            .processing-steps {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 14px;
+            }
+            .step-pill {
+                padding: 16px;
+                border-radius: var(--radius-md);
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.04);
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                min-height: 92px;
+                position: relative;
+                overflow: hidden;
+                animation: floatCard 3s ease-in-out infinite;
+            }
+            .step-pill.active {
+                border-color: rgba(0, 255, 136, 0.45);
+                box-shadow: inset 0 0 0 1px rgba(0, 255, 136, 0.18);
+            }
+            .step-pill.done {
+                background: rgba(0, 255, 136, 0.08);
+            }
+            .step-icon {
+                width: 38px;
+                height: 38px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: rgba(0, 255, 136, 0.1);
+                color: var(--primary);
+                flex: 0 0 auto;
+            }
+            .spinner {
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                border: 2px solid rgba(224, 255, 224, 0.2);
+                border-top-color: var(--primary);
+                animation: spin 0.9s linear infinite;
+            }
+            .checkmark {
+                display: none;
+                width: 18px;
+                height: 18px;
+                color: var(--primary);
+            }
+            .step-pill.done .spinner {
+                display: none;
+            }
+            .step-pill.done .checkmark {
+                display: block;
+            }
+            .results-panel {
+                display: none;
+                transform: translateY(40px);
+                opacity: 0;
+            }
+            .results-panel.revealed {
+                display: block;
+                animation: slideUp 600ms ease forwards;
+            }
+            .comparison-panel {
+                display: none;
+                transform: translateY(24px);
+                opacity: 0;
+            }
+            .comparison-panel.revealed {
+                display: block;
+                animation: slideUp 600ms ease forwards;
+            }
+            .comparison-grid {
+                display: grid;
+                grid-template-columns: 1fr auto 1fr;
+                gap: 24px;
+                align-items: stretch;
+                margin-top: 16px;
+            }
+            .comparison-card {
+                padding: 24px;
+                border-radius: var(--radius-xl);
+                background: var(--card-strong);
+                border: var(--border);
+                position: relative;
+                min-height: 360px;
+                display: grid;
+                gap: 16px;
+            }
+            .comparison-card h3 {
+                margin: 0;
+                font-size: 1rem;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: var(--muted);
+            }
+            .comparison-image-wrap {
+                position: relative;
+                overflow: hidden;
+                border-radius: var(--radius-lg);
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+            }
+            .comparison-image {
+                width: 100%;
+                height: 240px;
+                object-fit: cover;
+                display: block;
+            }
+            .comparison-meta {
+                display: grid;
+                gap: 8px;
+                color: var(--muted);
+                font-size: 0.95rem;
+            }
+            .comparison-meta strong {
+                color: var(--text);
+            }
+            .comparison-vs-badge {
+                width: 76px;
+                height: 76px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: rgba(0, 255, 136, 0.14);
+                border: 1px solid rgba(0, 255, 136, 0.28);
+                color: var(--primary);
+                font-weight: 800;
+                box-shadow: 0 0 28px rgba(0, 255, 136, 0.15);
+                margin: 0 auto;
+            }
+            .comparison-tags {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 8px;
+            }
+            .comparison-tag {
+                padding: 8px 12px;
+                border-radius: 999px;
+                background: rgba(0, 255, 136, 0.08);
+                color: var(--primary);
+                border: 1px solid rgba(0, 255, 136, 0.12);
+                font-size: 0.9rem;
+            }
+            .comparison-scanline {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 4px;
+                background: linear-gradient(90deg, transparent, rgba(0, 255, 136, 0.9), transparent);
+                animation: scan 2.2s linear infinite;
+                pointer-events: none;
+            }
+            .lambda-panel {
+                padding: 24px;
+            }
+            .lambda-card-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 16px;
+                margin-top: 18px;
+            }
+            .lambda-card {
+                padding: 18px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: var(--border);
+                display: grid;
+                gap: 12px;
+                min-height: 260px;
+            }
+            .lambda-card-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .lambda-badge {
+                display: inline-flex;
+                padding: 6px 12px;
+                border-radius: 999px;
+                background: rgba(0, 255, 136, 0.12);
+                color: var(--primary);
+                font-size: 0.82rem;
+                font-weight: 700;
+            }
+            .lambda-value {
+                font-size: clamp(1.6rem, 3vw, 2.4rem);
+                line-height: 1;
+            }
+            .lambda-ring {
+                width: 128px;
+                height: 128px;
+                margin: 0 auto;
+            }
+            .lambda-ring-track {
+                stroke: rgba(255, 255, 255, 0.08);
+                fill: none;
+                stroke-width: 12;
+            }
+            .lambda-ring-progress {
+                stroke-width: 12;
+                stroke-linecap: round;
+                fill: none;
+                transform: rotate(-90deg);
+                transform-origin: center;
+            }
+            .lambda-stat {
+                display: flex;
+                justify-content: space-between;
+                gap: 10px;
+                align-items: center;
+            }
+            .lambda-bar {
+                width: 100%;
+                height: 12px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.06);
+                overflow: hidden;
+            }
+            .lambda-bar-fill {
+                height: 100%;
+                width: 0;
+                border-radius: inherit;
+                background: linear-gradient(90deg, var(--primary), var(--secondary));
+                transition: width 1s ease;
+            }
+            .lambda-charts {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 18px;
+                margin-top: 24px;
+            }
+            .lambda-chart-card {
+                padding: 18px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: var(--border);
+                display: grid;
+                gap: 12px;
+            }
+            .lambda-chart-card h3 {
+                margin: 0;
+                font-size: 1rem;
+                color: var(--muted);
+            }
+            .lambda-chart-canvas {
+                width: 100%;
+                min-height: 260px;
+            }
+            .chart-legend {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .chart-legend-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.92rem;
+                color: var(--muted);
+            }
+            .chart-legend-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+            }
+            .severity-section {
+                display: grid;
+                gap: 14px;
+                justify-items: center;
+            }
+            .severity-canvas {
+                width: 100%;
+                max-width: 220px;
+                height: 110px;
+            }
+            .severity-meta {
+                display: flex;
+                width: 100%;
+                justify-content: space-between;
+                color: var(--muted);
+                font-size: 0.92rem;
+            }
+            .severity-label {
+                margin: 0;
+                font-size: 1rem;
+                font-weight: 700;
+                text-align: center;
+            }
+            .severity-text {
+                margin: 0;
+                color: var(--primary);
+                font-weight: 700;
+                text-align: center;
+            }
+            .lambda-refresh-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+            .refresh-training-btn {
+                margin-left: auto;
+            }
+            .result-card {
+                padding: 22px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                min-height: 280px;
+                display: grid;
+                gap: 14px;
+                animation: floatCard 3s ease-in-out infinite;
+            }
+            .result-label {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.95rem;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+            }
+            .disease-name {
+                margin: 0;
+                font-size: clamp(1.7rem, 4vw, 2.8rem);
+                line-height: 1.05;
+            }
+            .status-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 14px;
+                border-radius: 999px;
+                font-size: 0.92rem;
+                font-weight: 700;
+                width: fit-content;
+            }
+            .status-high {
+                background: rgba(0, 255, 136, 0.12);
+                color: var(--success);
+            }
+            .status-medium {
+                background: rgba(255, 216, 77, 0.12);
+                color: var(--warning);
+            }
+            .status-low {
+                background: rgba(255, 77, 77, 0.12);
+                color: var(--danger);
+            }
+            .confidence-ring {
+                width: 170px;
+                height: 170px;
+                margin: 0 auto;
+                display: block;
+            }
+            .ring-track {
+                stroke: rgba(255, 255, 255, 0.08);
+                fill: none;
+                stroke-width: 14;
+            }
+            .ring-progress {
+                stroke: var(--primary);
+                fill: none;
+                stroke-width: 14;
+                stroke-linecap: round;
+                transform-origin: center;
+                transform: rotate(-90deg);
+                transition: stroke-dashoffset 1.2s ease;
+                filter: drop-shadow(0 0 10px rgba(0, 255, 136, 0.45));
+            }
+            .ring-center {
+                font-size: 1.15rem;
+                fill: var(--text);
+                font-weight: 700;
+            }
+            .metric-stack {
+                display: grid;
+                gap: 10px;
+            }
+            .score-rail {
+                position: relative;
+                height: 180px;
+                width: 28px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.06);
+                overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+            }
+            .score-fill {
+                position: absolute;
+                inset: auto 0 0 0;
+                background: linear-gradient(180deg, var(--primary), var(--secondary));
+                height: 0%;
+                transition: height 1s ease;
+            }
+            .tag-list {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .tag {
+                padding: 7px 12px;
+                border-radius: 999px;
+                background: rgba(0, 255, 136, 0.08);
+                color: var(--primary);
+                font-size: 0.85rem;
+                border: 1px solid rgba(0, 255, 136, 0.12);
+            }
+            .bar-wrap {
+                display: grid;
+                gap: 8px;
+            }
+            .bar-track {
+                height: 12px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.06);
+                overflow: hidden;
+            }
+            .bar-fill {
+                height: 100%;
+                width: 0%;
+                border-radius: inherit;
+                background: linear-gradient(90deg, var(--primary), var(--accent));
+                transition: width 1s ease;
+            }
+            .warning-banner {
+                display: none;
+                padding: 14px 16px;
+                border-radius: var(--radius-md);
+                background: rgba(255, 216, 77, 0.1);
+                border: 1px solid rgba(255, 216, 77, 0.2);
+                color: var(--warning);
+                animation: pulseWarn 1.8s ease-in-out infinite;
+            }
+            .portal-controls {
+                display: flex;
+                gap: 12px;
+                flex-wrap: wrap;
+                align-items: center;
+                margin-bottom: 14px;
+            }
+            .folder-pill {
+                padding: 10px 14px;
+                border-radius: 999px;
+                border: 1px solid rgba(0, 255, 136, 0.25);
+                color: var(--muted);
+                font-size: 0.9rem;
+                background: rgba(0, 255, 136, 0.06);
+            }
+            .portal-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 14px;
+            }
+            .upload-item {
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: var(--radius-lg);
+                overflow: hidden;
+                display: grid;
+                min-height: 260px;
+                animation: floatCard 3s ease-in-out infinite;
+                transition: background 0.3s ease, transform 0.25s ease, border-color 0.3s ease;
+            }
+            .upload-item:hover {
+                background: rgba(255, 255, 255, 0.92);
+                border-color: rgba(0, 0, 0, 0.08);
+                transform: translateY(-4px);
+            }
+            .upload-thumb {
+                width: 100%;
+                height: 170px;
+                object-fit: cover;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                background: rgba(0, 0, 0, 0.3);
+                transition: filter 0.3s ease, opacity 0.3s ease;
+            }
+            .upload-item:hover .upload-thumb {
+                filter: brightness(0.9);
+                opacity: 0.95;
+            }
+            .upload-body-card {
+                padding: 12px;
+                display: grid;
+                gap: 8px;
+            }
+            .upload-item:hover .upload-title,
+            .upload-item:hover .upload-meta {
+                color: #111;
+            }
+            .upload-title {
+                margin: 0;
+                font-size: 0.95rem;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .upload-meta {
+                margin: 0;
+                font-size: 0.85rem;
+                color: var(--muted);
+            }
+            .upload-actions {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+            }
+            .portal-empty {
+                border: 1px dashed rgba(0, 255, 136, 0.3);
+                border-radius: var(--radius-lg);
+                padding: 22px;
+                text-align: center;
+                color: var(--muted);
+            }
+            .portal-grid:hover {
+                background: rgba(255, 255, 255, 0.08);
+                transition: background 0.25s ease;
+            }
+            .portal-grid:hover .upload-item {
+                background: rgba(255, 255, 255, 0.92);
+            }
+            .hero-feature-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 14px;
+                margin-top: 22px;
+            }
+            .hero-feature-card {
+                padding: 18px;
+                border-radius: var(--radius-xl);
+                background: rgba(255, 255, 255, 0.92);
+                color: #111;
+                border: 1px solid rgba(15, 23, 42, 0.12);
+                box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+                transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+            }
+            .hero-feature-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 22px 42px rgba(15, 23, 42, 0.12);
+                background: #ffffff;
+            }
+            .hero-feature-card h3 {
+                margin: 0 0 10px;
+                font-size: 1rem;
+                color: #0f172a;
+            }
+            .hero-feature-card p {
+                margin: 0;
+                color: #475569;
+                line-height: 1.6;
+            }
+            .feature-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 18px;
+                margin-top: 18px;
+            }
+            .feature-card {
+                padding: 24px;
+                border-radius: var(--radius-xl);
+                background: rgba(255, 255, 255, 0.9);
+                color: #111;
+                border: 1px solid rgba(15, 23, 42, 0.12);
+                transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+            }
+            .feature-card:hover {
+                transform: translateY(-6px);
+                box-shadow: 0 18px 40px rgba(15, 23, 42, 0.12);
+                background: #ffffff;
+            }
+            .feature-card h3 {
+                margin: 0 0 10px;
+                font-size: 1.2rem;
+                color: #0f172a;
+            }
+            .feature-card p {
+                margin: 0;
+                color: #475569;
+                line-height: 1.7;
+            }
+            .model-intel-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 14px;
+            }
+            .stat-card {
+                padding: 22px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                min-height: 160px;
+                display: grid;
+                gap: 10px;
+                position: relative;
+                animation: floatCard 3s ease-in-out infinite;
+            }
+            .tooltip {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                font-size: 0.8rem;
+                background: rgba(0, 255, 136, 0.12);
+                color: var(--primary);
+                border: 1px solid rgba(0, 255, 136, 0.22);
+                margin-left: 8px;
+                cursor: help;
+            }
+            .how-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 14px;
+            }
+            .how-card {
+                padding: 22px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                min-height: 180px;
+                display: grid;
+                gap: 10px;
+                transform: translateY(24px);
+                opacity: 0;
+                transition: opacity 700ms ease, transform 700ms ease;
+            }
+            .how-card.visible {
+                transform: translateY(0);
+                opacity: 1;
+                animation: floatCard 3s ease-in-out infinite;
+            }
+            .how-icon {
+                width: 42px;
+                height: 42px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: rgba(0, 255, 136, 0.09);
+                color: var(--primary);
+                font-size: 1.15rem;
+            }
+            .toast-stack {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                display: grid;
+                gap: 10px;
+                z-index: 20;
+            }
+            .toast {
+                min-width: 280px;
+                max-width: 360px;
+                padding: 14px 16px;
+                border-radius: var(--radius-md);
+                background: rgba(13, 26, 13, 0.95);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                box-shadow: var(--shadow);
+                transform: translateX(120%);
+                opacity: 0;
+                animation: toastIn 300ms ease forwards;
+            }
+            .toast.success {
+                border-color: rgba(0, 255, 136, 0.2);
+            }
+            .toast.error {
+                border-color: rgba(255, 77, 77, 0.2);
+            }
+            .toast.info {
+                border-color: rgba(127, 255, 0, 0.2);
+            }
+            .toast-title {
+                margin: 0 0 4px;
+                font-weight: 700;
+            }
+            .toast-body {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.92rem;
+            }
+            #gridOverlay {
+                position: fixed;
+                inset: 0;
+                z-index: -1;
+                pointer-events: none;
+            }
+            .custom-cursor {
+                position: fixed;
+                width: 10px;
+                height: 10px;
+                background: #ffffff;
+                border-radius: 50%;
+                pointer-events: none;
+                transform: translate(-50%, -50%);
+                z-index: 999;
+            }
+            body {
+                cursor: none;
+            }
+            .reveal {
+                opacity: 0;
+                transform: translateY(24px);
+                transition: opacity 700ms ease, transform 700ms ease;
+            }
+            .reveal.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            @keyframes floatCard {
+                0%, 100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(-4px);
+                }
+            }
+            @keyframes bounce {
+                0%, 100% {
+                    transform: translateY(0);
+                }
+                50% {
+                    transform: translateY(8px);
+                }
+            }
+            @keyframes dashOffset {
+                to {
+                    stroke-dashoffset: -60;
+                }
+            }
+            @keyframes scan {
+                0% {
+                    transform: translateY(0);
+                    opacity: 0.15;
+                }
+                10% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 1;
+                }
+                100% {
+                    transform: translateY(100%);
+                    opacity: 0.15;
+                }
+            }
+            @keyframes shimmer {
+                from {
+                    transform: translateX(-120%);
+                }
+                to {
+                    transform: translateX(120%);
+                }
+            }
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+            @keyframes slideUp {
+                from {
+                    transform: translateY(40px);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes pulseWarn {
+                0%, 100% {
+                    box-shadow: 0 0 0 rgba(255, 216, 77, 0);
+                }
+                50% {
+                    box-shadow: 0 0 18px rgba(255, 216, 77, 0.12);
+                }
+            }
+            @keyframes toastIn {
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes fadeUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(16px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @media (max-width: 1100px) {
+                .hero-stats, .processing-steps, .results-grid, .portal-grid, .model-intel-grid, .how-grid, .hero-feature-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+            }
+            @media (max-width: 700px) {
+                .topbar {
+                    padding: 12px 14px;
+                }
+                .topbar-inner {
+                    flex-direction: column;
+                    align-items: flex-start;
+                }
+                .topnav {
+                    justify-content: flex-start;
+                }
+                .hero {
+                    padding-top: 104px;
+                }
+                .hero-stats, .processing-steps, .results-grid, .portal-grid, .model-intel-grid, .how-grid {
+                    grid-template-columns: 1fr;
+                }
+                .upload-card, .steps-panel, .results-panel, .portal-panel, .intelligence-panel, .how-panel {
+                    padding: 20px;
+                }
+                .upload-dropzone {
+                    min-height: 280px;
+                }
+                .button-row {
+                    flex-direction: column;
+                }
+                .primary-button, .ghost-button {
+                    width: 100%;
+                }
+                .toast-stack {
+                    left: 16px;
+                    right: 16px;
+                }
+                .toast {
+                    min-width: 0;
+                    width: 100%;
+                }
+            }
+            /* ===== SECTION 1: MARQUEE STRIP ===== */
+            .marquee-strip {
+                width: 100%;
+                background: rgba(0,255,136,0.03);
+                border-top: 1px solid rgba(0,255,136,0.08);
+                border-bottom: 1px solid rgba(0,255,136,0.08);
+                padding: 14px 0;
+                overflow: hidden;
+                position: relative;
+            }
+            .marquee-content {
+                display: flex;
+                animation: scroll 35s linear infinite;
+                white-space: nowrap;
+                will-change: transform;
+            }
+            .marquee-text {
+                font-size: 0.95rem;
+                letter-spacing: 0.15em;
+                text-transform: uppercase;
+                color: var(--muted);
+                display: inline-flex;
+                gap: 1.5rem;
+                padding: 0 2rem;
+                align-items: center;
+            }
+            .marquee-divider {
+                color: var(--primary);
+                font-weight: 700;
+            }
+            @keyframes scroll {
+                0% { transform: translateX(0); }
+                100% { transform: translateX(-50%); }
+            }
+            /* ===== SECTION 2: ABOUT BUILDER ===== */
+            .about-section {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4rem;
+                align-items: center;
+                padding: 3rem;
+                border-radius: var(--radius-lg);
+                background: var(--card);
+                border: 1px solid rgba(127,255,0,0.18);
+                margin: 3rem 0;
+            }
+            .about-left {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            .about-label {
+                font-size: 0.75rem;
+                letter-spacing: 0.2em;
+                text-transform: uppercase;
+                color: var(--muted);
+            }
+            .about-name {
+                font-size: clamp(2rem,5vw,3.5rem);
+                font-weight: 700;
+                color: var(--text);
+                text-shadow: var(--glow);
+            }
+            .about-role {
+                display: inline-block;
+                background: rgba(0,255,136,0.08);
+                border: 1px solid rgba(0,255,136,0.2);
+                color: var(--primary);
+                padding: 8px 18px;
+                border-radius: 999px;
+                font-size: 0.85rem;
+                font-weight: 500;
+                width: fit-content;
+            }
+            .about-description {
+                color: var(--muted);
+                line-height: 1.8;
+                font-size: 1rem;
+            }
+            .about-skills {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 12px;
+            }
+            .skill-tag {
+                background: rgba(255,255,255,0.04);
+                border: 1px solid rgba(0,255,136,0.12);
+                color: var(--text);
+                padding: 6px 14px;
+                border-radius: 999px;
+                font-size: 0.82rem;
+            }
+            .about-right {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem;
+            }
+            .avatar-circle {
+                width: 140px;
+                height: 140px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(127,255,0,0.08));
+                border: 2px solid rgba(0,255,136,0.3);
+                font-size: 3rem;
+                font-weight: 700;
+                color: var(--primary);
+                display: grid;
+                place-items: center;
+            }
+            .availability-indicator {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .pulse-dot {
+                width: 8px;
+                height: 8px;
+                background: var(--primary);
+                border-radius: 50%;
+                animation: pulse 1.5s ease infinite;
+            }
+            @keyframes pulse {
+                0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,136,0.4); }
+                50% { box-shadow: 0 0 0 8px rgba(0,255,136,0); }
+            }
+            .availability-text {
+                color: var(--primary);
+                font-size: 0.85rem;
+                font-weight: 500;
+            }
+            /* ===== SECTION 3: PROJECT EXPLANATION ===== */
+            .explanation-section {
+                margin: 3rem 0;
+            }
+            .explanation-header {
+                margin-bottom: 2rem;
+            }
+            .explanation-subtitle {
+                color: var(--muted);
+                font-size: 1rem;
+                line-height: 1.6;
+            }
+            .explanation-blocks {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+            }
+            .explanation-block {
+                display: grid;
+                grid-template-columns: 80px 1fr 60px;
+                gap: 2rem;
+                padding: 2rem 0;
+                border-bottom: 1px solid rgba(0,255,136,0.06);
+                align-items: center;
+            }
+            .explanation-block:last-child {
+                border-bottom: none;
+            }
+            .block-number {
+                font-size: 4rem;
+                font-weight: 700;
+                color: rgba(0,255,136,0.15);
+                font-style: italic;
+            }
+            .block-content {
+                flex: 1;
+            }
+            .block-heading {
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: var(--text);
+                margin-bottom: 0.5rem;
+            }
+            .block-description {
+                color: var(--muted);
+                line-height: 1.8;
+                font-size: 0.95rem;
+            }
+            .block-icon {
+                width: 50px;
+                height: 50px;
+                border-radius: 50%;
+                background: rgba(0,255,136,0.08);
+                border: 1px solid rgba(0,255,136,0.2);
+                display: grid;
+                place-items: center;
+                font-size: 1.5rem;
+            }
+            /* ===== SECTION 4: STATS STRIP ===== */
+            .stats-strip {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 1px;
+                background: rgba(0,255,136,0.08);
+                padding: 1px;
+                border-radius: var(--radius-lg);
+                overflow: hidden;
+                margin: 3rem 0;
+            }
+            .stat-item {
+                background: var(--card);
+                padding: 28px 16px;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                justify-content: center;
+            }
+            .stat-number {
+                font-size: clamp(2rem,4vw,3rem);
+                font-weight: 700;
+                color: var(--primary);
+            }
+            .stat-label {
+                font-size: 0.82rem;
+                color: var(--muted);
+            }
+            /* ===== SECTION 5: TECH STACK ===== */
+            .tech-section {
+                margin: 3rem 0;
+            }
+            .tech-header {
+                margin-bottom: 2rem;
+            }
+            .tech-subtitle {
+                color: var(--muted);
+                font-size: 1rem;
+            }
+            .tech-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 1.5rem;
+            }
+            .tech-card {
+                padding: 22px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: 1px solid;
+                display: grid;
+                gap: 12px;
+                animation: floatCard 3s ease-in-out infinite;
+            }
+            .tech-card:nth-child(1) {
+                border-color: rgba(238,76,44,0.2);
+                transition-delay: 0ms;
+            }
+            .tech-card:nth-child(2) {
+                border-color: rgba(0,200,150,0.2);
+                transition-delay: 100ms;
+            }
+            .tech-card:nth-child(3) {
+                border-color: rgba(0,150,255,0.2);
+                transition-delay: 200ms;
+            }
+            .tech-card:nth-child(4) {
+                border-color: rgba(180,0,255,0.2);
+                transition-delay: 300ms;
+            }
+            .tech-card:nth-child(5) {
+                border-color: rgba(255,210,0,0.2);
+                transition-delay: 400ms;
+            }
+            .tech-card:nth-child(6) {
+                border-color: rgba(0,255,136,0.2);
+                transition-delay: 500ms;
+            }
+            .tech-icon {
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                font-weight: 700;
+                font-size: 0.9rem;
+                color: var(--text);
+            }
+            .tech-card:nth-child(1) .tech-icon {
+                background: rgba(238,76,44,0.15);
+            }
+            .tech-card:nth-child(2) .tech-icon {
+                background: rgba(0,200,150,0.15);
+            }
+            .tech-card:nth-child(3) .tech-icon {
+                background: rgba(0,150,255,0.15);
+            }
+            .tech-card:nth-child(4) .tech-icon {
+                background: rgba(180,0,255,0.15);
+            }
+            .tech-card:nth-child(5) .tech-icon {
+                background: rgba(255,210,0,0.15);
+            }
+            .tech-card:nth-child(6) .tech-icon {
+                background: rgba(0,255,136,0.15);
+            }
+            .tech-name {
+                font-weight: 700;
+                font-size: 1.05rem;
+                color: var(--text);
+            }
+            .tech-description {
+                color: var(--muted);
+                font-size: 0.85rem;
+                line-height: 1.6;
+            }
+            /* ===== RESPONSIVE ===== */
+            @media (max-width: 700px) {
+                .about-section {
+                    grid-template-columns: 1fr;
+                    gap: 2rem;
+                    padding: 2rem;
+                }
+                .stats-strip {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .tech-grid {
+                    grid-template-columns: 1fr;
+                }
+                .explanation-block {
+                    grid-template-columns: 1fr;
+                    gap: 1rem;
+                }
+                .block-number, .block-icon {
+                    display: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="app-shell">
+            <header class="topbar">
+                <div class="topbar-inner">
+                    <a href="#hero" class="brand">
+                        <div class="brand-mark">PV</div>
+                        <div class="brand-text">
+                            <strong>PruneVision</strong>
+                            <span>Intelligent Plant Disease Detector</span>
+                        </div>
+                    </a>
+                    <nav class="topnav">
+                        <a href="#upload">Upload</a>
+                        <a href="#results">Results</a>
+                        <a href="#portal">Portal</a>
+                        <a href="#model">Model</a>
+                        <a href="#how">How It Works</a>
+                    </nav>
                 </div>
-              </div>
-              <div class="tag-list" id="enhancementTags"></div>
-              <div id="leafDetectedText" style="color:var(--muted);">Leaf detected: pending</div>
-            </div>
-          </div>
-          <div class="result-card">
-            <p class="result-label">Model Stats</p>
-            <div class="bar-wrap">
-              <div><strong>Sparsity</strong> <span id="sparsityValue" style="color:var(--muted);"></span></div>
-              <div class="bar-track"><div class="bar-fill" id="sparsityBar"></div></div>
-              <div><strong>Model Size</strong> <span id="modelSizeValue" style="color:var(--muted);"></span></div>
-              <div><strong>Lambda</strong> <span id="lambdaValue" style="color:var(--muted);"></span></div>
-            </div>
-            <div class="warning-banner" id="warningBanner"></div>
-            <div class="button-row" style="justify-content:flex-start; margin-top:auto;">
-              <button class="ghost-button" id="resetButton">Analyze Another</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      </div>
-    </section>
-
-    <section class="section reveal" id="portalSection">
-      <div class="section-shell">
-        <p class="section-label">Portal</p>
-        <h2 class="section-title">Upload history</h2>
-        <p class="section-copy">Your images, results, and PDF reports live here as a persistent record instead of a temporary upload list.</p>
-      </div>
-      <div class="container content-stack">
-      <div class="glass-card portal-panel">
-        <h2 class="panel-title">Uploads Portal</h2>
-        <div class="portal-controls">
-          <button class="ghost-button" id="openFolderButton">Open Uploads Folder</button>
-          <button class="ghost-button" id="refreshPortalButton">Refresh History</button>
-          <span class="folder-pill" id="folderInfo">Loading upload folder...</span>
-        </div>
-        <div class="portal-grid" id="uploadsGrid"></div>
-      </div>
-      </div>
-    </section>
-
-    <section class="section reveal" id="intelSection">
-      <div class="section-shell">
-        <p class="section-label">Model</p>
-        <h2 class="section-title">System intelligence</h2>
-        <p class="section-copy">The model panel translates pruning metrics into a readable product signal rather than a wall of raw numbers.</p>
-      </div>
-      <div class="container content-stack">
-      <div class="glass-card intelligence-panel">
-        <h2 class="panel-title">Model Intelligence<span class="tooltip" title="Sparsity measures the share of gates that have been pushed near zero.">?</span></h2>
-        <div class="model-intel-grid">
-          <div class="stat-card"><p class="result-label">Total Sparsity %</p><div style="font-size:2.4rem; font-weight:700;" id="statSparsity">0</div><p style="color:var(--muted); margin:0;">Percent of prunable gates below threshold.</p></div>
-          <div class="stat-card"><p class="result-label">Active Parameters</p><div style="font-size:2.4rem; font-weight:700;" id="statActive">0</div><p style="color:var(--muted); margin:0;">Parameters still participating in inference.</p></div>
-          <div class="stat-card"><p class="result-label">Model Size MB</p><div style="font-size:2.4rem; font-weight:700;" id="statSize">0</div><p style="color:var(--muted); margin:0;">Estimated checkpoint memory footprint.</p></div>
-        </div>
-      </div>
-      </div>
-    </section>
-
-    <section class="section reveal" id="howSection">
-      <div class="section-shell">
-        <p class="section-label">Guide</p>
-        <h2 class="section-title">How it works</h2>
-        <p class="section-copy">The final section stays deliberately calm and explanatory, matching the reference style of a clean stacked portfolio page.</p>
-      </div>
-      <div class="container content-stack">
-      <div class="glass-card how-panel">
-        <h2 class="panel-title">How It Works</h2>
-        <div class="how-grid">
-          <div class="how-card reveal"><div class="how-icon">👁</div><strong>Quality Check</strong><p style="color:var(--muted); margin:0;">Rejects blurry, tiny, dark, or overexposed uploads before inference.</p></div>
-          <div class="how-card reveal"><div class="how-icon">🪄</div><strong>Enhancement</strong><p style="color:var(--muted); margin:0;">Denoises, equalizes contrast, sharpens, and normalizes brightness.</p></div>
-          <div class="how-card reveal"><div class="how-icon">🍃</div><strong>Leaf Detection</strong><p style="color:var(--muted); margin:0;">Removes background and crops to the most relevant plant region.</p></div>
-          <div class="how-card reveal"><div class="how-icon">🧠</div><strong>Pruned AI</strong><p style="color:var(--muted); margin:0;">Runs a sparse neural network and reports confidence-aware guidance.</p></div>
-        </div>
-      </div>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    const API_BASE = window.location.origin.startsWith("http") ? window.location.origin : "http://127.0.0.1:8000";
-    const STEP_DELAY = 800;
-    const TOAST_DURATION = 3000;
-    const FILE_SIZE_DIVISOR = 1024 * 1024;
-    const CIRCLE_RADIUS = 68;
-    const CIRCLE_CIRCUMFERENCE = 2 * Math.PI * CIRCLE_RADIUS;
-
-    let selectedFile = null;
-    let activeNodes = [];
-    let canvas = null;
-    let context = null;
-    let canvasFrame = { width: 0, height: 0 };
-    let processingActive = false;
-
-    /** Initialize DOM references and wire events after the page loads. */
-    function bootstrap() {
-      canvas = document.getElementById("networkCanvas");
-      context = canvas.getContext("2d");
-      wireUploadEvents();
-      wireButtons();
-      wireScrollReveal();
-      setupCanvas();
-      fetchModelStats();
-      fetchUploadHistory();
-      fetchUploadsFolder();
-      startCanvasLoop();
-      countUp(document.getElementById("statSparsity"), 0);
-      countUp(document.getElementById("statActive"), 0);
-      countUp(document.getElementById("statSize"), 0);
-      showToast("PruneVision ready", "info", "Upload a leaf image to begin analysis.");
-    }
-
-    /** Connect buttons and file inputs to their handlers. */
-    function wireButtons() {
-      document.getElementById("browseButton").addEventListener("click", () => document.getElementById("fileInput").click());
-      document.getElementById("analyzeButton").addEventListener("click", analyzeImage);
-      document.getElementById("resetButton").addEventListener("click", resetUI);
-      document.getElementById("refreshPortalButton").addEventListener("click", fetchUploadHistory);
-      document.getElementById("openFolderButton").addEventListener("click", openUploadsFolder);
-    }
-
-    /** Connect drag-and-drop and file selection handlers. */
-    function wireUploadEvents() {
-      const dropzone = document.getElementById("dropzone");
-      const fileInput = document.getElementById("fileInput");
-
-      dropzone.addEventListener("dragover", (event) => { event.preventDefault(); dropzone.style.transform = "scale(1.01)"; });
-      dropzone.addEventListener("dragleave", () => { dropzone.style.transform = "scale(1)"; });
-      dropzone.addEventListener("drop", (event) => {
-        event.preventDefault();
-        dropzone.style.transform = "scale(1)";
-        const file = event.dataTransfer.files[0];
-        if (file) handleFileUpload(file);
-      });
-      dropzone.addEventListener("click", () => fileInput.click());
-      fileInput.addEventListener("change", () => {
-        const file = fileInput.files[0];
-        if (file) handleFileUpload(file);
-      });
-    }
-
-    /** Set up the canvas size and start the animation loop. */
-    function setupCanvas() {
-      resizeCanvas();
-      window.addEventListener("resize", resizeCanvas);
-      activeNodes = createNodes(60);
-    }
-
-    /** Resize the network canvas to match the viewport. */
-    function resizeCanvas() {
-      canvasFrame.width = window.innerWidth;
-      canvasFrame.height = window.innerHeight;
-      canvas.width = canvasFrame.width * window.devicePixelRatio;
-      canvas.height = canvasFrame.height * window.devicePixelRatio;
-      context.setTransform(window.devicePixelRatio, 0, 0, window.devicePixelRatio, 0, 0);
-    }
-
-    /** Create the animated network nodes. */
-    function createNodes(count) {
-      const nodes = [];
-      for (let index = 0; index < count; index += 1) {
-        nodes.push({
-          x: Math.random() * canvasFrame.width,
-          y: Math.random() * canvasFrame.height,
-          vx: (Math.random() - 0.5) * 0.35,
-          vy: (Math.random() - 0.5) * 0.35,
-          radius: 1.8 + Math.random() * 1.6,
-          opacity: 0.45 + Math.random() * 0.5,
-          pruneTimer: Math.random() * 400,
-        });
-      }
-      return nodes;
-    }
-
-    /** Animate the pruning network background. */
-    function startCanvasLoop() {
-      function frame() {
-        drawNetwork();
-        requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-    }
-
-    /** Draw nodes, connections, and pruning fades on the network canvas. */
-    function drawNetwork() {
-      context.clearRect(0, 0, canvasFrame.width, canvasFrame.height);
-      for (const node of activeNodes) {
-        node.x += node.vx;
-        node.y += node.vy;
-        if (node.x < 0 || node.x > canvasFrame.width) node.vx *= -1;
-        if (node.y < 0 || node.y > canvasFrame.height) node.vy *= -1;
-        node.pruneTimer += 1;
-        if (node.pruneTimer > 900 + Math.random() * 900) {
-          node.opacity = Math.max(0.12, node.opacity - 0.0012);
-          node.pruneTimer = 0;
-        } else if (node.opacity < 0.95) {
-          node.opacity += 0.0005;
-        }
-      }
-
-      for (let i = 0; i < activeNodes.length; i += 1) {
-        const left = activeNodes[i];
-        for (let j = i + 1; j < activeNodes.length; j += 1) {
-          const right = activeNodes[j];
-          const distance = Math.hypot(left.x - right.x, left.y - right.y);
-          if (distance < 150) {
-            const pruneChance = Math.random();
-            const alpha = 1 - distance / 150;
-            context.beginPath();
-            context.moveTo(left.x, left.y);
-            context.lineTo(right.x, right.y);
-            context.strokeStyle = pruneChance > 0.992 ? `rgba(255, 77, 77, ${alpha * 0.5})` : `rgba(0, 255, 136, ${alpha * 0.16})`;
-            context.lineWidth = 1;
-            context.stroke();
-          }
-        }
-      }
-
-      for (const node of activeNodes) {
-        context.beginPath();
-        context.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
-        context.fillStyle = `rgba(0, 255, 136, ${node.opacity})`;
-        context.shadowBlur = 12;
-        context.shadowColor = "rgba(0, 255, 136, 0.45)";
-        context.fill();
-      }
-      context.shadowBlur = 0;
-    }
-
-    /** Display a toast notification. */
-    function showToast(message, type = "info", detail = "") {
-      const stack = document.getElementById("toastStack");
-      const toast = document.createElement("div");
-      toast.className = `toast ${type}`;
-      toast.innerHTML = `<p class="toast-title">${message}</p><p class="toast-body">${detail}</p>`;
-      stack.appendChild(toast);
-      window.setTimeout(() => {
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(120%)";
-        window.setTimeout(() => toast.remove(), 260);
-      }, TOAST_DURATION);
-    }
-
-    /** Handle file selection and create a preview. */
-    function handleFileUpload(file) {
-      if (!file.type.startsWith("image/")) {
-        showToast("Unsupported file", "error", "Please choose an image file.");
-        return;
-      }
-
-      selectedFile = file;
-      const reader = new FileReader();
-      reader.onload = () => {
-        document.getElementById("uploadCopy").style.display = "none";
-        document.getElementById("previewWrap").style.display = "grid";
-        document.getElementById("analyzeRow").style.display = "flex";
-        const previewImage = document.getElementById("previewImage");
-        previewImage.src = reader.result;
-        document.getElementById("fileName").textContent = file.name;
-        document.getElementById("fileSize").textContent = `${(file.size / FILE_SIZE_DIVISOR).toFixed(2)} MB`;
-        showToast("Image loaded", "success", file.name);
-      };
-      reader.readAsDataURL(file);
-    }
-
-    /** Reset the UI after a prediction. */
-    function resetUI() {
-      selectedFile = null;
-      document.getElementById("fileInput").value = "";
-      document.getElementById("uploadCopy").style.display = "grid";
-      document.getElementById("previewWrap").style.display = "none";
-      document.getElementById("analyzeRow").style.display = "none";
-      document.getElementById("resultsPanel").classList.remove("revealed");
-      showToast("Ready for another image", "info", "Select a new plant photo to analyze.");
-    }
-
-    /** Simulate the four processing steps with the requested delay cadence. */
-    function simulateProcessingSteps() {
-      const steps = [...document.querySelectorAll(".step-pill")];
-      steps.forEach((step) => step.classList.remove("active", "done"));
-      steps.forEach((step, index) => {
-        window.setTimeout(() => {
-          step.classList.add("active");
-          if (index > 0) {
-            steps[index - 1].classList.remove("active");
-            steps[index - 1].classList.add("done");
-          }
-          if (index === steps.length - 1) {
-            window.setTimeout(() => {
-              step.classList.add("done");
-              step.classList.remove("active");
-            }, STEP_DELAY);
-          }
-        }, index * STEP_DELAY);
-      });
-    }
-
-    /** Run the prediction request and update the results panel. */
-    async function analyzeImage() {
-      if (!selectedFile) {
-        showToast("No image selected", "error", "Upload a plant leaf image first.");
-        return;
-      }
-      if (processingActive) {
-        return;
-      }
-
-      processingActive = true;
-      const analyzeButton = document.getElementById("analyzeButton");
-      analyzeButton.disabled = true;
-      analyzeButton.textContent = "Analyzing...";
-      simulateProcessingSteps();
-      showToast("Analysis started", "info", "Running preprocessing and AI inference.");
-
-      try {
-        const formData = new FormData();
-        formData.append("file", selectedFile);
-        const response = await fetch(`${API_BASE}/predict`, { method: "POST", body: formData });
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.detail || "Prediction request failed");
-        }
-        const data = await response.json();
-        updateResults(data);
-        fetchUploadHistory();
-        fetchUploadsFolder();
-        showToast("Analysis complete", "success", `Confidence: ${(data.confidence * 100).toFixed(1)}%`);
-      } catch (error) {
-        showToast("Prediction failed", "error", error.message);
-      } finally {
-        processingActive = false;
-        analyzeButton.disabled = false;
-        analyzeButton.textContent = "Analyze Plant";
-      }
-    }
-
-    /** Populate all result cards with the returned API data. */
-    function updateResults(data) {
-      const resultsPanel = document.getElementById("resultsPanel");
-      resultsPanel.classList.add("revealed");
-
-      document.getElementById("resultLabel").textContent = data.label;
-      document.getElementById("confidenceText").textContent = `${Math.round(data.confidence * 100)}%`;
-      document.getElementById("qualityScore").textContent = Math.round(data.preprocessing_report.quality_score);
-      document.getElementById("qualityFill").style.height = `${Math.max(0, Math.min(100, data.preprocessing_report.quality_score))}%`;
-      document.getElementById("leafDetectedText").textContent = `Leaf detected: ${data.preprocessing_report.leaf_detected ? "Yes" : "No"}`;
-      document.getElementById("sparsityValue").textContent = `${data.model_stats.sparsity_percent.toFixed(2)}%`;
-      document.getElementById("modelSizeValue").textContent = `${data.model_stats.model_size_mb.toFixed(2)} MB`;
-      document.getElementById("lambdaValue").textContent = `${data.model_stats.lambda_used}`;
-      document.getElementById("warningBanner").style.display = data.warning ? "block" : "none";
-      document.getElementById("warningBanner").textContent = data.warning || "";
-
-      const badge = document.getElementById("confidenceBadge");
-      badge.className = "status-badge";
-      if (data.confidence_status === "high_confidence") {
-        badge.classList.add("status-high");
-      } else if (data.confidence_status === "medium_confidence") {
-        badge.classList.add("status-medium");
-      } else {
-        badge.classList.add("status-low");
-      }
-      badge.textContent = data.confidence_status.replace(/_/g, " ");
-
-      const enhancementTags = document.getElementById("enhancementTags");
-      enhancementTags.innerHTML = "";
-      for (const enhancement of data.preprocessing_report.enhancements_applied) {
-        const tag = document.createElement("span");
-        tag.className = "tag";
-        tag.textContent = enhancement.replace(/_/g, " ");
-        enhancementTags.appendChild(tag);
-      }
-
-      animateCircleProgress(document.getElementById("confidenceRing"), data.confidence);
-      animateBar(document.getElementById("sparsityBar"), data.model_stats.sparsity_percent / 100);
-      countUp(document.getElementById("statSparsity"), data.model_stats.sparsity_percent);
-      countUp(document.getElementById("statActive"), data.model_stats.active_parameters);
-      countUp(document.getElementById("statSize"), data.model_stats.model_size_mb);
-    }
-
-    /** Animate an SVG confidence ring from 0 to the requested value. */
-    function animateCircleProgress(element, value) {
-      element.setAttribute("stroke-dasharray", `${CIRCLE_CIRCUMFERENCE} ${CIRCLE_CIRCUMFERENCE}`);
-      element.setAttribute("stroke-dashoffset", `${CIRCLE_CIRCUMFERENCE}`);
-      const targetOffset = CIRCLE_CIRCUMFERENCE * (1 - value);
-      let start = null;
-      function frame(timestamp) {
-        if (!start) start = timestamp;
-        const progress = Math.min((timestamp - start) / 1000, 1);
-        const current = CIRCLE_CIRCUMFERENCE - (CIRCLE_CIRCUMFERENCE - targetOffset) * progress;
-        element.setAttribute("stroke-dashoffset", `${current}`);
-        if (progress < 1) requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-    }
-
-    /** Animate a horizontal bar to the requested percentage. */
-    function animateBar(element, value) {
-      element.style.width = `${Math.max(0, Math.min(100, value * 100))}%`;
-    }
-
-    /** Count up an element's numeric content. */
-    function countUp(element, target) {
-      const duration = 900;
-      const start = performance.now();
-      const initial = 0;
-      function frame(now) {
-        const progress = Math.min((now - start) / duration, 1);
-        const current = initial + (target - initial) * progress;
-        element.textContent = Number.isInteger(target) ? Math.round(current).toLocaleString() : current.toFixed(2);
-        if (progress < 1) requestAnimationFrame(frame);
-      }
-      requestAnimationFrame(frame);
-    }
-
-    /** Fetch live model statistics from the backend. */
-    async function fetchModelStats() {
-      try {
-        const response = await fetch(`${API_BASE}/model-stats`);
-        if (!response.ok) {
-          throw new Error("Unable to fetch model stats");
-        }
-        const stats = await response.json();
-        countUp(document.getElementById("statSparsity"), stats.sparsity_percent);
-        countUp(document.getElementById("statActive"), stats.active_parameters);
-        countUp(document.getElementById("statSize"), stats.model_size_mb);
-      } catch (error) {
-        showToast("Stats unavailable", "error", error.message);
-      }
-    }
-
-    /** Fetch metadata about the uploads folder for portal visibility. */
-    async function fetchUploadsFolder() {
-      try {
-        const response = await fetch(`${API_BASE}/uploads-folder`);
-        if (!response.ok) {
-          throw new Error("Failed to load uploads folder info");
-        }
-        const data = await response.json();
-        document.getElementById("folderInfo").textContent = `${data.file_count} files in ${data.folder_path}`;
-      } catch (error) {
-        document.getElementById("folderInfo").textContent = "Unable to load uploads folder info";
-      }
-    }
-
-    /** Request the server to open uploads folder in local file explorer. */
-    async function openUploadsFolder() {
-      try {
-        const response = await fetch(`${API_BASE}/open-uploads-folder`, { method: "POST" });
-        if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          throw new Error(err.detail || "Could not open uploads folder");
-        }
-        showToast("Uploads folder opened", "success", "Check your file explorer.");
-      } catch (error) {
-        showToast("Open folder failed", "error", error.message);
-      }
-    }
-
-    /** Fetch and render uploaded image history from the backend database. */
-    async function fetchUploadHistory() {
-      const grid = document.getElementById("uploadsGrid");
-      try {
-        const response = await fetch(`${API_BASE}/uploads?limit=24`);
-        if (!response.ok) {
-          throw new Error("Unable to load uploads history");
-        }
-        const uploads = await response.json();
-        if (!uploads.length) {
-          grid.innerHTML = `<div class="portal-empty">No uploads yet. Analyze an image to populate this portal.</div>`;
-          return;
-        }
-
-        grid.innerHTML = uploads.map((item) => {
-          const confidencePct = (item.confidence * 100).toFixed(1);
-          const badgeClass = item.confidence_status === "high_confidence"
-            ? "status-high"
-            : item.confidence_status === "medium_confidence"
-              ? "status-medium"
-              : "status-low";
-
-          return `
-            <article class="upload-item">
-              <img class="upload-thumb" src="${API_BASE}${item.image_url}" alt="${item.original_filename}" />
-              <div class="upload-body-card">
-                <h3 class="upload-title" title="${item.original_filename}">${item.original_filename}</h3>
-                <p class="upload-meta">${item.label} • ${confidencePct}%</p>
-                <span class="status-badge ${badgeClass}">${item.confidence_status.replace(/_/g, " ")}</span>
-                <div class="upload-actions">
-                  <a class="ghost-button" href="${API_BASE}${item.pdf_url}" target="_blank" rel="noopener">Download PDF</a>
+            </header>
+            <main class="app-shell">
+                <canvas id="gridOverlay"></canvas>
+                <div class="custom-cursor" id="customCursor"></div>
+                <section class="hero" id="hero">
+                    <div class="hero-inner">
+                        <h1 class="hero-title">PruneVision</h1>
+                        <p class="hero-kicker">Intelligent Plant Disease Detector</p>
+                        <p class="hero-subtitle">A clean, immersive analysis workspace for plant disease detection, upload history, and downloadable reports.</p>
+                        <div class="hero-actions">
+                            <a href="#upload" class="primary-button">Start Analysis</a>
+                            <a href="#portal" class="ghost-button">Open Portal</a>
+                        </div>
+                        <div class="hero-feature-grid">
+                            <div class="hero-feature-card">
+                                <h3>Instant Diagnosis</h3>
+                                <p>Run fast inference on leaf uploads with clear confidence scoring.</p>
+                            </div>
+                            <div class="hero-feature-card">
+                                <h3>Smart History</h3>
+                                <p>Store results and review past uploads quickly in a clean portal.</p>
+                            </div>
+                            <div class="hero-feature-card">
+                                <h3>Quality First</h3>
+                                <p>Automatic checks for image clarity, lighting, and leaf coverage.</p>
+                            </div>
+                            <div class="hero-feature-card">
+                                <h3>Compact Metrics</h3>
+                                <p>See model sparsity, parameters, and size in a single dashboard.</p>
+                            </div>
+                        </div>
+                        <div class="hero-stats">
+                            <div class="hero-stat">
+                                <strong>Fast Upload</strong>
+                                <span>Drop a leaf image and launch the pipeline in one step.</span>
+                            </div>
+                            <div class="hero-stat">
+                                <strong>Portal History</strong>
+                                <span>Review every prediction with image previews and PDF export.</span>
+                            </div>
+                            <div class="hero-stat">
+                                <strong>Self-Pruning AI</strong>
+                                <span>See confidence, sparsity, and preprocessing details instantly.</span>
+                            </div>
+                        </div>
+                        <div class="scroll-indicator">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                                <path d="M8 12V4M8 12L4 8M8 12L12 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                    </div>
+                </section>
+                <div class="content-stack">
+                    <!-- SECTION 1: MARQUEE STRIP -->
+                    <div class="marquee-strip">
+                        <div class="marquee-content">
+                            <div class="marquee-text">Self-Pruning AI <span class="marquee-divider">✦</span> Plant Disease Detection <span class="marquee-divider">✦</span> Intelligent Preprocessing <span class="marquee-divider">✦</span> FastAPI Backend <span class="marquee-divider">✦</span> 70% Weights Pruned <span class="marquee-divider">✦</span> Real-Time Inference <span class="marquee-divider">✦</span></div>
+                            <div class="marquee-text">Self-Pruning AI <span class="marquee-divider">✦</span> Plant Disease Detection <span class="marquee-divider">✦</span> Intelligent Preprocessing <span class="marquee-divider">✦</span> FastAPI Backend <span class="marquee-divider">✦</span> 70% Weights Pruned <span class="marquee-divider">✦</span> Real-Time Inference <span class="marquee-divider">✦</span></div>
+                        </div>
+                    </div>
+                    <!-- SECTION 2: ABOUT THE BUILDER -->
+                    <section class="about-section reveal">
+                        <div class="about-left">
+                            <div class="about-label">BUILT BY</div>
+                            <h2 class="about-name">Balaji Madhan</h2>
+                            <div class="about-role">AI Engineer Intern Candidate</div>
+                            <p class="about-description">I built PruneVision as part of my application to Tredence's AI Engineering Internship. This project goes beyond the case study requirement — combining a self-pruning neural network with a real-world plant disease detection application, intelligent preprocessing pipeline, and a production-ready FastAPI backend.</p>
+                            <div class="about-skills">
+                                <div class="skill-tag">PyTorch</div>
+                                <div class="skill-tag">FastAPI</div>
+                                <div class="skill-tag">OpenCV</div>
+                                <div class="skill-tag">Computer Vision</div>
+                                <div class="skill-tag">Python</div>
+                            </div>
+                        </div>
+                        <div class="about-right">
+                            <div class="avatar-circle">BM</div>
+                            <div class="availability-indicator">
+                                <div class="pulse-dot"></div>
+                                <div class="availability-text">Available for Internship</div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- SECTION 3: PROJECT EXPLANATION -->
+                    <section class="explanation-section reveal">
+                        <div class="explanation-header">
+                            <h2 class="panel-title">What is PruneVision?</h2>
+                            <p class="explanation-subtitle">A real-world AI application built on top of the self-pruning neural network case study</p>
+                        </div>
+                        <div class="explanation-blocks">
+                            <div class="explanation-block">
+                                <div class="block-number">01</div>
+                                <div class="block-content">
+                                    <h3 class="block-heading">The Problem — Large Models Can't Run Everywhere</h3>
+                                    <p class="block-description">Neural networks used in agriculture must run on cheap smartphones and IoT devices in remote fields — not powerful servers. Standard models are too large and slow. We need a way to make them smaller without losing accuracy.</p>
+                                </div>
+                                <div class="block-icon">🌐</div>
+                            </div>
+                            <div class="explanation-block">
+                                <div class="block-number">02</div>
+                                <div class="block-content">
+                                    <h3 class="block-heading">The Solution — Self-Pruning During Training</h3>
+                                    <p class="block-description">PruneVision uses a custom PrunableLinear layer where every weight has a learnable gate. During training, the L1 sparsity loss pushes unnecessary gates to zero — effectively removing those weights. The result is a model that is 30–70% smaller with minimal accuracy loss, ready to run on edge devices.</p>
+                                </div>
+                                <div class="block-icon">🧠</div>
+                            </div>
+                            <div class="explanation-block">
+                                <div class="block-number">03</div>
+                                <div class="block-content">
+                                    <h3 class="block-heading">The Enhancement — Intelligent Preprocessing</h3>
+                                    <p class="block-description">Before the pruned model even sees the image, a 4-layer preprocessing pipeline cleans it: quality gating rejects bad photos, CLAHE contrast enhancement normalizes lighting, rembg removes backgrounds, and contour detection isolates only the leaf. This makes the model more accurate on real-world photos.</p>
+                                </div>
+                                <div class="block-icon">🌿</div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- SECTION 4: STATS STRIP -->
+                    <div class="stats-strip reveal">
+                        <div class="stat-item">
+                            <div class="stat-number" data-stat="70">0%</div>
+                            <div class="stat-label">Max Weights Pruned</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" data-stat="4">0</div>
+                            <div class="stat-label">Preprocessing Layers</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" data-stat="3">0</div>
+                            <div class="stat-label">Lambda Values Tested</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" data-stat="224">0</div>
+                            <div class="stat-label">Model Input Size</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-number" data-stat="100">0%</div>
+                            <div class="stat-label">Quality Score</div>
+                        </div>
+                    </div>
+                    <!-- SECTION 5: TECH STACK -->
+                    <section class="tech-section reveal">
+                        <div class="tech-header">
+                            <h2 class="panel-title">Technology Stack</h2>
+                            <p class="tech-subtitle">Every tool chosen for a specific reason</p>
+                        </div>
+                        <div class="tech-grid">
+                            <div class="tech-card">
+                                <div class="tech-icon">PT</div>
+                                <div class="tech-name">PyTorch</div>
+                                <div class="tech-description">Custom PrunableLinear layer, CNN backbone, sparse training loop</div>
+                            </div>
+                            <div class="tech-card">
+                                <div class="tech-icon">FA</div>
+                                <div class="tech-name">FastAPI</div>
+                                <div class="tech-description">REST endpoints, async inference, CORS, Pydantic response models</div>
+                            </div>
+                            <div class="tech-card">
+                                <div class="tech-icon">CV</div>
+                                <div class="tech-name">OpenCV</div>
+                                <div class="tech-description">Blur detection, CLAHE contrast, contour-based leaf cropping</div>
+                            </div>
+                            <div class="tech-card">
+                                <div class="tech-icon">RB</div>
+                                <div class="tech-name">rembg</div>
+                                <div class="tech-description">U2Net background removal to isolate leaf from surroundings</div>
+                            </div>
+                            <div class="tech-card">
+                                <div class="tech-icon">PY</div>
+                                <div class="tech-name">Python</div>
+                                <div class="tech-description">Type hints, dataclasses, logging, pathlib throughout</div>
+                            </div>
+                            <div class="tech-card">
+                                <div class="tech-icon">DB</div>
+                                <div class="tech-name">SQLite</div>
+                                <div class="tech-description">Persistent upload history across server restarts</div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <section class="section-shell" id="upload">
+                        <div class="glass-card upload-card">
+                            <div class="upload-layout">
+                                <div class="upload-dropzone" id="uploadArea">
+                                    <svg class="border-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                        <rect x="0" y="0" width="100%" height="100%"/>
+                                    </svg>
+                                    <div class="upload-copy">
+                                        <h2 class="upload-headline">Drop a plant leaf image here</h2>
+                                        <p>The preprocessor will check image quality, enhance the frame, detect the leaf, and run the pruned AI model.</p>
+                                        <p id="fileStatus">No file chosen</p>
+                                    </div>
+                                    <input type="file" id="fileInput" accept="image/*">
+                                </div>
+                                <div class="preview-wrap" id="preview">
+                                    <div class="preview-frame">
+                                        <img id="imagePreview" alt="Plant leaf preview">
+                                        <div class="scan-line"></div>
+                                    </div>
+                                    <div class="meta-row">
+                                        <span id="fileName">No file selected</span>
+                                        <span id="fileSize">0 KB</span>
+                                    </div>
+                                </div>
+                                <div class="button-row">
+                                    <button class="primary-button" id="analyzeBtn" disabled>Analyze Image</button>
+                                    <button class="ghost-button" id="clearBtn">Clear</button>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell" id="steps">
+                        <div class="glass-card steps-panel">
+                            <h2 class="panel-title">Processing Pipeline</h2>
+                            <div class="processing-steps" id="processingSteps">
+                                <div class="step-pill" data-step="1">
+                                    <div class="step-icon">1</div>
+                                    <div>
+                                        <strong>Quality Check</strong>
+                                        <div class="spinner"></div>
+                                        <svg class="checkmark" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="step-pill" data-step="2">
+                                    <div class="step-icon">2</div>
+                                    <div>
+                                        <strong>Enhancing Image</strong>
+                                        <div class="spinner"></div>
+                                        <svg class="checkmark" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="step-pill" data-step="3">
+                                    <div class="step-icon">3</div>
+                                    <div>
+                                        <strong>Detecting Leaf</strong>
+                                        <div class="spinner"></div>
+                                        <svg class="checkmark" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="step-pill" data-step="4">
+                                    <div class="step-icon">4</div>
+                                    <div>
+                                        <strong>Running AI Model</strong>
+                                        <div class="spinner"></div>
+                                        <svg class="checkmark" viewBox="0 0 24 24" fill="none">
+                                            <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell" id="results">
+                        <div class="glass-card results-panel" id="resultsPanel">
+                            <h2 class="panel-title">Analysis Results</h2>
+                            <div class="results-grid">
+                                <div class="result-card">
+                                    <h3 class="result-label">Prediction</h3>
+                                    <h4 class="disease-name" id="prediction">Awaiting analysis</h4>
+                                    <div class="severity-section">
+                                        <canvas id="severityGauge" class="severity-canvas"></canvas>
+                                        <div class="severity-meta">
+                                            <span>Low</span>
+                                            <span>High</span>
+                                        </div>
+                                        <p id="severityText" class="severity-text">Awaiting result</p>
+                                    </div>
+                                    <div class="status-badge status-high" id="statusBadge">Idle</div>
+                                    <div class="confidence-ring">
+                                        <svg viewBox="0 0 200 200">
+                                            <circle cx="100" cy="100" r="70" class="ring-track"/>
+                                            <circle cx="100" cy="100" r="70" class="ring-progress" id="confidenceRing"/>
+                                            <text x="100" y="105" text-anchor="middle" class="ring-center" id="confidenceText">0%</text>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="result-card">
+                                    <h3 class="result-label">Preprocessing Report</h3>
+                                    <div class="metric-stack">
+                                        <div class="score-rail">
+                                            <div class="score-fill" id="qualityScore"></div>
+                                        </div>
+                                        <div class="tag-list" id="preprocessingTags">
+                                            <span class="tag">Quality Score: 0</span>
+                                            <span class="tag">Leaf detected: pending</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="result-card">
+                                    <h3 class="result-label">Model Stats</h3>
+                                    <div class="bar-wrap">
+                                        <div class="bar-track">
+                                            <div class="bar-fill" id="sparsityBar"></div>
+                                        </div>
+                                        <span>Sparsity: 0%</span>
+                                    </div>
+                                    <div class="bar-wrap">
+                                        <div class="bar-track">
+                                            <div class="bar-fill" id="paramsBar"></div>
+                                        </div>
+                                        <span>Active Parameters: 0</span>
+                                    </div>
+                                    <div class="bar-wrap">
+                                        <div class="bar-track">
+                                            <div class="bar-fill" id="sizeBar"></div>
+                                        </div>
+                                        <span>Model Size: 0 MB</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="warning-banner" id="warningBanner">
+                                <strong>Warning:</strong> Image quality may affect accuracy. Consider retaking the photo.
+                            </div>
+                            <div class="button-row">
+                                <button class="primary-button" id="analyzeAnotherBtn">Analyze Another</button>
+                                <button class="ghost-button" id="downloadReportBtn">Download Report</button>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell reveal" id="comparisonSection">
+                        <div class="glass-card comparison-panel" id="comparisonPanel">
+                            <h2 class="panel-title">Preprocessor Comparison</h2>
+                            <div class="comparison-grid">
+                                <div class="comparison-card">
+                                    <h3>Original Image</h3>
+                                    <div class="comparison-image-wrap">
+                                        <img id="originalComparisonImage" class="comparison-image" src="" alt="Original upload preview">
+                                    </div>
+                                    <div class="comparison-meta">
+                                        <div>Original size: <strong id="originalSizeText">–</strong></div>
+                                        <div>Use the tree above to compare raw upload and processed output.</div>
+                                    </div>
+                                </div>
+                                <div class="comparison-vs-badge">VS</div>
+                                <div class="comparison-card">
+                                    <h3>After Intelligent Preprocessing</h3>
+                                    <div class="comparison-image-wrap" style="position:relative;">
+                                        <img id="processedComparisonImage" class="comparison-image" src="" alt="Processed preprocessor preview">
+                                        <div class="comparison-scanline"></div>
+                                    </div>
+                                    <div class="comparison-meta">
+                                        <div>Processed size: <strong id="processedSizeText">224×224</strong></div>
+                                        <div>Leaf detected: <strong id="leafDetectedText">–</strong></div>
+                                    </div>
+                                    <div class="comparison-tags" id="enhancementsList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell" id="portal">
+                        <div class="glass-card portal-panel">
+                            <h2 class="panel-title">Uploads Portal</h2>
+                            <div class="portal-controls">
+                                <div class="folder-pill">Open Uploads Folder</div>
+                                <button class="ghost-button" id="refreshHistoryBtn">Refresh History</button>
+                            </div>
+                            <div class="portal-grid" id="historyGrid">
+                                <div class="portal-empty">
+                                    <p>Loading upload folder...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell" id="quick-features">
+                        <div class="glass-card portal-panel">
+                            <h2 class="panel-title">Quick Insights</h2>
+                            <p class="section-copy">Important detection metrics and user-facing insights are grouped into compact boxes for faster decision making.</p>
+                            <div class="feature-grid">
+                                <div class="feature-card">
+                                    <h3>Upload Confidence</h3>
+                                    <p>See model confidence and image quality in one glance so you can trust every plant diagnosis.</p>
+                                </div>
+                                <div class="feature-card">
+                                    <h3>Processing Metrics</h3>
+                                    <p>Track preprocessing score, leaf detection status, and model sparsity from every completed scan.</p>
+                                </div>
+                                <div class="feature-card">
+                                    <h3>Recent Activity</h3>
+                                    <p>Review the latest uploads, history status, and prediction summaries without leaving the page.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell" id="model">
+                        <div class="glass-card intelligence-panel">
+                            <h2 class="panel-title">Model Intelligence <span class="tooltip">?</span></h2>
+                            <div class="model-intel-grid">
+                                <div class="stat-card">
+                                    <h3>Total Sparsity %</h3>
+                                    <div class="bar-wrap">
+                                        <div class="bar-track">
+                                            <div class="bar-fill" id="totalSparsityBar"></div>
+                                        </div>
+                                        <span id="totalSparsityText">0</span>
+                                    </div>
+                                    <p>Percent of prunable gates below threshold.</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>Active Parameters</h3>
+                                    <div class="bar-wrap">
+                                        <div class="bar-track">
+                                            <div class="bar-fill" id="activeParamsBar"></div>
+                                        </div>
+                                        <span id="activeParamsText">0</span>
+                                    </div>
+                                    <p>Parameters still participating in inference.</p>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>Model Size MB</h3>
+                                    <div class="bar-wrap">
+                                        <div class="bar-track">
+                                            <div class="bar-fill" id="modelSizeBar"></div>
+                                        </div>
+                                        <span id="modelSizeText">0</span>
+                                    </div>
+                                    <p>Estimated checkpoint memory footprint.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell reveal" id="lambdaComparator">
+                        <div class="glass-card lambda-panel">
+                            <div class="lambda-refresh-row">
+                                <div>
+                                    <h2 class="panel-title">Lambda Comparator</h2>
+                                    <p class="section-copy">Compare model accuracy and sparsity across lambda schedules with animated charts and quick summary cards.</p>
+                                </div>
+                                <button class="ghost-button refresh-training-btn" id="refreshTrainingBtn">Refresh Data</button>
+                            </div>
+                            <div class="lambda-card-grid" id="lambdaCards"></div>
+                            <div class="lambda-charts">
+                                <div class="lambda-chart-card">
+                                    <h3>Accuracy over Epochs</h3>
+                                    <canvas id="accuracyChart" class="lambda-chart-canvas"></canvas>
+                                    <div class="chart-legend" id="accuracyLegend"></div>
+                                </div>
+                                <div class="lambda-chart-card">
+                                    <h3>Sparsity over Epochs</h3>
+                                    <canvas id="sparsityChart" class="lambda-chart-canvas"></canvas>
+                                    <div class="chart-legend" id="sparsityLegend"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="section-shell" id="how">
+                        <div class="section-label">Guide</div>
+                        <h2 class="section-title">How It Works</h2>
+                        <p class="section-copy">The final section stays deliberately calm and explanatory, matching the reference style of a clean stacked portfolio page.</p>
+                        <div class="how-grid">
+                            <div class="how-card reveal">
+                                <div class="how-icon">Q</div>
+                                <h3>Quality Check</h3>
+                                <p>Rejects blurry, tiny, dark, or overexposed uploads before inference.</p>
+                            </div>
+                            <div class="how-card reveal">
+                                <div class="how-icon">E</div>
+                                <h3>Enhancement</h3>
+                                <p>Denoises, equalizes contrast, sharpens, and normalizes brightness.</p>
+                            </div>
+                            <div class="how-card reveal">
+                                <div class="how-icon">L</div>
+                                <h3>Leaf Detection</h3>
+                                <p>Removes background and crops to the most relevant plant region.</p>
+                            </div>
+                            <div class="how-card reveal">
+                                <div class="how-icon">A</div>
+                                <h3>Pruned AI</h3>
+                                <p>Runs a sparse neural network and reports confidence-aware guidance.</p>
+                            </div>
+                        </div>
+                    </section>
                 </div>
-              </div>
-            </article>
-          `;
-        }).join("");
-      } catch (error) {
-        grid.innerHTML = `<div class="portal-empty">${error.message}</div>`;
-        showToast("Portal unavailable", "error", error.message);
-      }
-    }
+            </main>
+        </div>
+        <div class="toast-stack" id="toastStack"></div>
+        <script>
+            // DOM elements
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const fileStatus = document.getElementById('fileStatus');
+            const preview = document.getElementById('preview');
+            const imagePreview = document.getElementById('imagePreview');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const analyzeAnotherBtn = document.getElementById('analyzeAnotherBtn');
+            const downloadReportBtn = document.getElementById('downloadReportBtn');
+            const refreshHistoryBtn = document.getElementById('refreshHistoryBtn');
+            const resultsPanel = document.getElementById('resultsPanel');
+            const prediction = document.getElementById('prediction');
+            const statusBadge = document.getElementById('statusBadge');
+            const confidenceRing = document.getElementById('confidenceRing');
+            const confidenceText = document.getElementById('confidenceText');
+            const qualityScore = document.getElementById('qualityScore');
+            const preprocessingTags = document.getElementById('preprocessingTags');
+            const sparsityBar = document.getElementById('sparsityBar');
+            const paramsBar = document.getElementById('paramsBar');
+            const sizeBar = document.getElementById('sizeBar');
+            const totalSparsityBar = document.getElementById('totalSparsityBar');
+            const activeParamsBar = document.getElementById('activeParamsBar');
+            const modelSizeBar = document.getElementById('modelSizeBar');
+            const totalSparsityText = document.getElementById('totalSparsityText');
+            const activeParamsText = document.getElementById('activeParamsText');
+            const modelSizeText = document.getElementById('modelSizeText');
+            const historyGrid = document.getElementById('historyGrid');
+            const comparisonPanel = document.getElementById('comparisonPanel');
+            const originalComparisonImage = document.getElementById('originalComparisonImage');
+            const processedComparisonImage = document.getElementById('processedComparisonImage');
+            const originalSizeText = document.getElementById('originalSizeText');
+            const processedSizeText = document.getElementById('processedSizeText');
+            const enhancementsList = document.getElementById('enhancementsList');
+            const leafDetectedText = document.getElementById('leafDetectedText');
+            const lambdaCards = document.getElementById('lambdaCards');
+            const accuracyChart = document.getElementById('accuracyChart');
+            const sparsityChart = document.getElementById('sparsityChart');
+            const accuracyLegend = document.getElementById('accuracyLegend');
+            const sparsityLegend = document.getElementById('sparsityLegend');
+            const severityGauge = document.getElementById('severityGauge');
+            const severityText = document.getElementById('severityText');
+            const toastStack = document.getElementById('toastStack');
+            const warningBanner = document.getElementById('warningBanner');
+            const processingSteps = document.querySelectorAll('.step-pill');
 
-    /** Configure scroll-based reveal animations for content sections. */
-    function wireScrollReveal() {
-      const observer = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-            observer.unobserve(entry.target);
-          }
-        }
-      }, { threshold: 0.12 });
-      document.querySelectorAll(".reveal").forEach((element) => observer.observe(element));
+            let currentFile = null;
+            let isAnalyzing = false;
 
-      const howObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("visible");
-          }
-        });
-      }, { threshold: 0.18 });
-      document.querySelectorAll(".how-card").forEach((element) => howObserver.observe(element));
-    }
+            // API base URL
+            const API_BASE = window.location.origin;
 
-    document.addEventListener("DOMContentLoaded", bootstrap);
-  </script>
-</body>
+            // File handling
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFileSelect(files[0]);
+                }
+            });
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                }
+            });
+
+            function handleFileSelect(file) {
+                if (!file.type.startsWith('image/')) {
+                    showToast('Please select a valid image file.', 'error');
+                    return;
+                }
+                if (file.size > 10 * 1024 * 1024) { // 10MB limit
+                    showToast('File size too large. Please select an image under 10MB.', 'error');
+                    return;
+                }
+                currentFile = file;
+                fileStatus.textContent = `Selected: ${file.name}`;
+                fileName.textContent = file.name;
+                fileSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+                preview.style.display = 'grid';
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    imagePreview.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+                analyzeBtn.disabled = false;
+                analyzeBtn.textContent = 'Analyze Image';
+            }
+
+            // Clear functionality
+            clearBtn.addEventListener('click', () => {
+                currentFile = null;
+                fileInput.value = '';
+                fileStatus.textContent = 'No file chosen';
+                preview.style.display = 'none';
+                imagePreview.src = '';
+                analyzeBtn.disabled = true;
+                resetResults();
+                resetSteps();
+            });
+
+            // Analysis functionality
+            analyzeBtn.addEventListener('click', async () => {
+                if (!currentFile || isAnalyzing) return;
+                isAnalyzing = true;
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = 'Analyzing...';
+                resetResults();
+                await runAnalysis();
+            });
+
+            async function runAnalysis() {
+                try {
+                    // Step 1: Quality Check
+                    updateStep(1, 'active');
+                    await simulateDelay(1000);
+                    updateStep(1, 'done');
+
+                    // Step 2: Enhancing Image
+                    updateStep(2, 'active');
+                    await simulateDelay(1500);
+                    updateStep(2, 'done');
+
+                    // Step 3: Detecting Leaf
+                    updateStep(3, 'active');
+                    await simulateDelay(1200);
+                    updateStep(3, 'done');
+
+                    // Step 4: Running AI Model
+                    updateStep(4, 'active');
+                    await simulateDelay(2000);
+
+                    // Send to backend
+                    const formData = new FormData();
+                    formData.append('file', currentFile);
+
+                    const response = await fetch(`${API_BASE}/predict`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    updateStep(4, 'done');
+
+                    // Update results
+                    updateResults(result);
+                    resultsPanel.classList.add('revealed');
+                    showToast('Analysis complete!', 'success');
+
+                } catch (error) {
+                    console.error('Analysis failed:', error);
+                    showToast('Analysis failed. Please try again.', 'error');
+                    resetSteps();
+                } finally {
+                    isAnalyzing = false;
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = 'Analyze Image';
+                }
+            }
+
+            function updateStep(stepNumber, status) {
+                const step = document.querySelector(`.step-pill[data-step="${stepNumber}"]`);
+                if (!step) return;
+                step.classList.remove('active', 'done');
+                if (status === 'active') {
+                    step.classList.add('active');
+                } else if (status === 'done') {
+                    step.classList.add('done');
+                }
+            }
+
+            function resetSteps() {
+                processingSteps.forEach(step => {
+                    step.classList.remove('active', 'done');
+                });
+            }
+
+            function updateResults(result) {
+                const label = result.label || result.prediction || 'Unknown';
+                const confidence = result.confidence || 0;
+                const preprocessingReport = result.preprocessing_report || result.preprocessing || {};
+                const qualityScoreValue = preprocessingReport.quality_score || 0;
+                const enhancements = Array.isArray(preprocessingReport.enhancements_applied)
+                    ? preprocessingReport.enhancements_applied
+                    : [];
+                const leafDetected = preprocessingReport.leaf_detected === true;
+                const originalSize = preprocessingReport.original_size || ['-', '-'];
+                const processedSize = preprocessingReport.processed_size || [224, 224];
+
+                prediction.textContent = label;
+                confidenceText.textContent = `${Math.round(confidence * 100)}%`;
+                const circumference = 2 * Math.PI * 70;
+                const offset = circumference - (confidence * circumference);
+                confidenceRing.style.strokeDasharray = `${circumference} ${circumference}`;
+                confidenceRing.style.strokeDashoffset = offset;
+
+                statusBadge.className = 'status-badge';
+                if (confidence > 0.8) {
+                    statusBadge.classList.add('status-high');
+                    statusBadge.textContent = 'High Confidence';
+                } else if (confidence > 0.5) {
+                    statusBadge.classList.add('status-medium');
+                    statusBadge.textContent = 'Medium Confidence';
+                } else {
+                    statusBadge.classList.add('status-low');
+                    statusBadge.textContent = 'Low Confidence';
+                }
+
+                qualityScore.style.height = `${Math.round(qualityScoreValue)}%`;
+                preprocessingTags.innerHTML = `
+                    <span class="tag">Quality Score: ${Math.round(qualityScoreValue)}</span>
+                    <span class="tag">Leaf detected: ${leafDetected ? 'yes' : 'no'}</span>
+                `;
+
+                originalComparisonImage.src = imagePreview.src;
+                originalSizeText.textContent = `${originalSize[0]} × ${originalSize[1]}`;
+                processedComparisonImage.src = result.processed_image_b64 ? `data:image/png;base64,${result.processed_image_b64}` : '';
+                processedSizeText.textContent = `${processedSize[0]} × ${processedSize[1]}`;
+                leafDetectedText.textContent = leafDetected ? 'Yes' : 'No';
+                enhancementsList.innerHTML = enhancements.length > 0
+                    ? enhancements.map(step => `<span class="comparison-tag">${step}</span>`).join('')
+                    : '<span class="comparison-tag">No enhancements applied</span>';
+                comparisonPanel.style.display = 'block';
+                comparisonPanel.classList.add('revealed');
+
+                const sparsity = result.model_stats?.sparsity_percent ?? result.model_stats?.sparsity ?? 0;
+                const activeParams = result.model_stats?.active_parameters || 0;
+                const modelSize = result.model_stats?.model_size_mb || 0;
+
+                sparsityBar.style.width = `${Math.round(sparsity * 100)}%`;
+                paramsBar.style.width = `${Math.min(activeParams / 1000000 * 100, 100)}%`;
+                sizeBar.style.width = `${Math.min(modelSize / 100 * 100, 100)}%`;
+
+                totalSparsityBar.style.width = `${Math.round(sparsity * 100)}%`;
+                activeParamsBar.style.width = `${Math.min(activeParams / 1000000 * 100, 100)}%`;
+                modelSizeBar.style.width = `${Math.min(modelSize / 100 * 100, 100)}%`;
+                totalSparsityText.textContent = `${Math.round(sparsity * 100)}%`;
+                activeParamsText.textContent = activeParams.toLocaleString();
+                modelSizeText.textContent = `${modelSize.toFixed(1)} MB`;
+
+                if (qualityScoreValue < 50) {
+                    warningBanner.style.display = 'block';
+                } else {
+                    warningBanner.style.display = 'none';
+                }
+
+                drawSeverityGauge(confidence, qualityScoreValue, label);
+            }
+
+            function resetResults() {
+                resultsPanel.classList.remove('revealed');
+                prediction.textContent = 'Awaiting analysis';
+                statusBadge.className = 'status-badge status-high';
+                statusBadge.textContent = 'Idle';
+                confidenceText.textContent = '0%';
+                confidenceRing.style.strokeDashoffset = 2 * Math.PI * 70;
+                qualityScore.style.height = '0%';
+                preprocessingTags.innerHTML = `
+                    <span class="tag">Quality Score: 0</span>
+                    <span class="tag">Leaf detected: pending</span>
+                `;
+                sparsityBar.style.width = '0%';
+                paramsBar.style.width = '0%';
+                sizeBar.style.width = '0%';
+                totalSparsityBar.style.width = '0%';
+                activeParamsBar.style.width = '0%';
+                modelSizeBar.style.width = '0%';
+                totalSparsityText.textContent = '0';
+                activeParamsText.textContent = '0';
+                modelSizeText.textContent = '0 MB';
+                warningBanner.style.display = 'none';
+                comparisonPanel.style.display = 'none';
+                comparisonPanel.classList.remove('revealed');
+                originalComparisonImage.src = '';
+                processedComparisonImage.src = '';
+                originalSizeText.textContent = '–';
+                processedSizeText.textContent = '224×224';
+                leafDetectedText.textContent = '–';
+                enhancementsList.innerHTML = '<span class="comparison-tag">No enhancements applied</span>';
+                severityText.textContent = 'Awaiting result';
+                drawSeverityGauge(0, 0, 'Awaiting');
+            }
+
+            // History functionality
+            refreshHistoryBtn.addEventListener('click', loadHistory);
+            const refreshTrainingBtn = document.getElementById('refreshTrainingBtn');
+            refreshTrainingBtn?.addEventListener('click', fetchTrainingHistory);
+
+            async function loadHistory() {
+                try {
+                    const response = await fetch(`${API_BASE}/uploads`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const uploads = await response.json();
+                    displayHistory(uploads);
+                } catch (error) {
+                    console.error('Failed to load history:', error);
+                    historyGrid.innerHTML = '<div class="portal-empty"><p>Failed to load history. Please try again.</p></div>';
+                    showToast('Failed to load upload history. Please refresh.', 'error');
+                }
+            }
+
+            function displayHistory(uploads) {
+                if (!uploads || uploads.length === 0) {
+                    historyGrid.innerHTML = '<div class="portal-empty"><p>No uploads yet. Analyze an image to get started!</p></div>';
+                    return;
+                }
+                const html = uploads.map(upload => `
+                    <div class="upload-item">
+                        <img src="${upload.image_url}" alt="${upload.original_filename || 'Upload'}" class="upload-thumb">
+                        <div class="upload-body-card">
+                            <h4 class="upload-title">${upload.label || 'Unknown'}</h4>
+                            <p class="upload-meta">${new Date(upload.created_at || Date.now()).toLocaleDateString()}</p>
+                            <div class="upload-actions">
+                                <button class="ghost-button" onclick="downloadReport(${upload.id})">Download</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                historyGrid.innerHTML = html;
+            }
+
+            // Analyze another
+            analyzeAnotherBtn.addEventListener('click', () => {
+                clearBtn.click();
+                document.getElementById('upload').scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // Download report
+            downloadReportBtn.addEventListener('click', () => {
+                // This would generate and download a PDF report
+                showToast('Report download feature coming soon!', 'info');
+            });
+
+            function downloadReport(uploadId) {
+                // This would download the specific report
+                showToast('Report download feature coming soon!', 'info');
+            }
+
+            // Toast notifications
+            function showToast(message, type = 'info') {
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                toast.innerHTML = `
+                    <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                    <div class="toast-body">${message}</div>
+                `;
+                toastStack.appendChild(toast);
+                setTimeout(() => {
+                    toast.remove();
+                }, 5000);
+            }
+
+            // Utility functions
+            function simulateDelay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+
+            /**
+             * Fetch the training history and render comparator cards and charts.
+             */
+            async function fetchTrainingHistory() {
+                try {
+                    const response = await fetch(`${API_BASE}/training-history`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    const runs = Array.isArray(data.runs) ? data.runs : [];
+                    renderLambdaCards(runs);
+
+                    const colors = ['#00ff88', '#ffd84d', '#ff6b6b'];
+                    const lambdaValues = [0.0001, 0.001, 0.01];
+                    const accuracyDatasets = lambdaValues.map((value, idx) => {
+                        const run = runs.find((entry) => Number(entry.lambda_sparse) === value);
+                        return {
+                            label: `λ=${value}`,
+                            color: colors[idx],
+                            data: Array.isArray(run?.history)
+                                ? run.history.map(item => Number(item.train_acc ?? item.accuracy ?? 0))
+                                : [],
+                        };
+                    });
+                    const sparsityDatasets = lambdaValues.map((value, idx) => {
+                        const run = runs.find((entry) => Number(entry.lambda_sparse) === value);
+                        return {
+                            label: `λ=${value}`,
+                            color: colors[idx],
+                            data: Array.isArray(run?.history)
+                                ? run.history.map(item => Number(item.sparsity ?? 0))
+                                : [],
+                        };
+                    });
+
+                    drawLineChart(accuracyChart, accuracyDatasets, 'Epoch', 'Accuracy', accuracyLegend);
+                    drawLineChart(sparsityChart, sparsityDatasets, 'Epoch', 'Sparsity', sparsityLegend);
+                } catch (error) {
+                    console.error('Training history failed:', error);
+                    showToast('Unable to load lambda comparator data.', 'error');
+                }
+            }
+
+            /**
+             * Build the top lambda cards from training history.
+             */
+            function renderLambdaCards(runs) {
+                const lambdaValues = [0.0001, 0.001, 0.01];
+                const colors = ['#00ff88', '#ffd84d', '#ff6b6b'];
+                const items = lambdaValues.map((value, index) => {
+                    const run = runs.find((entry) => Number(entry.lambda_sparse) === value);
+                    const accuracy = run?.test_accuracy ?? 0;
+                    const sparsity = run?.sparsity_percent ?? 0;
+                    const activeParams = Number(run?.active_parameters ?? 0);
+                    const badgeHtml = value === 0.001 ? '<span class="lambda-badge">Best Balance</span>' : '';
+                    return `
+                        <div class="lambda-card">
+                            <div class="lambda-card-header">
+                                <div class="lambda-value">λ=${value}</div>
+                                ${badgeHtml}
+                            </div>
+                            <div class="lambda-ring">
+                                <svg viewBox="0 0 200 200">
+                                    <circle cx="100" cy="100" r="70" class="lambda-ring-track"/>
+                                    <circle cx="100" cy="100" r="70" class="lambda-ring-progress" data-target="${accuracy}" stroke="${colors[index]}"/>
+                                </svg>
+                            </div>
+                            <div class="lambda-stat">
+                                <span>Accuracy</span><strong>${(accuracy * 100).toFixed(1)}%</strong>
+                            </div>
+                            <div class="lambda-bar">
+                                <div class="lambda-bar-fill" style="width: ${Math.round(sparsity * 100)}%"></div>
+                            </div>
+                            <div class="lambda-stat">
+                                <span>Sparsity</span><strong>${Math.round(sparsity * 100)}%</strong></div>
+                            <div class="lambda-stat">
+                                <span>Parameters</span><strong>${activeParams.toLocaleString()}</strong>
+                            </div>
+                        </div>
+                    `;
+                });
+                lambdaCards.innerHTML = items.join('');
+                document.querySelectorAll('.lambda-ring-progress').forEach(circle => {
+                    const radius = 70;
+                    const circumference = 2 * Math.PI * radius;
+                    const target = Number(circle.dataset.target) || 0;
+                    circle.style.strokeDasharray = `${circumference} ${circumference}`;
+                    circle.style.strokeDashoffset = `${circumference}`;
+                    const offset = circumference - Math.min(1, target) * circumference;
+                    setTimeout(() => {
+                        circle.style.transition = 'stroke-dashoffset 1.2s ease';
+                        circle.style.strokeDashoffset = offset;
+                    }, 80);
+                });
+            }
+
+            /**
+             * Draw a simple line chart with animated lines.
+             */
+            function drawLineChart(canvas, datasets, xLabel, yLabel, legendContainer) {
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+                const width = canvas.clientWidth || 320;
+                const height = canvas.clientHeight || 260;
+                const ratio = window.devicePixelRatio || 1;
+                canvas.width = width * ratio;
+                canvas.height = height * ratio;
+                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                ctx.clearRect(0, 0, width, height);
+
+                const padding = 40;
+                const maxX = Math.max(...datasets.map(d => d.data.length), 1);
+                const maxY = 1;
+                const chartWidth = width - padding * 2;
+                const chartHeight = height - padding * 2;
+                const pointsByDataset = datasets.map(dataset => ({
+                    label: dataset.label,
+                    color: dataset.color,
+                    points: dataset.data.map((value, idx) => ({
+                        x: padding + (idx / Math.max(maxX - 1, 1)) * chartWidth,
+                        y: padding + chartHeight - Math.min(value, maxY) * chartHeight,
+                    }))
+                }));
+
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, padding + chartHeight);
+                ctx.lineTo(padding + chartWidth, padding + chartHeight);
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255,255,255,0.08)';
+                ctx.font = '12px Inter, sans-serif';
+                ctx.fillText(xLabel, width / 2 - 20, height - 12);
+                ctx.fillText(yLabel, 12, padding + 12);
+
+                if (legendContainer) {
+                    legendContainer.innerHTML = datasets.map(dataset => `
+                        <span class="chart-legend-item">
+                            <span class="chart-legend-dot" style="background:${dataset.color}"></span>
+                            ${dataset.label}
+                        </span>
+                    `).join('');
+                }
+
+                pointsByDataset.forEach(dataset => {
+                    if (dataset.points.length < 2) return;
+                    animateLine(ctx, dataset.points, dataset.color, 900);
+                });
+            }
+
+            /**
+             * Animate a single line dataset on the canvas.
+             */
+            function animateLine(ctx, points, color, duration) {
+                const startTime = performance.now();
+                const total = points.length;
+                ctx.lineWidth = 2.5;
+                ctx.strokeStyle = color;
+                ctx.lineCap = 'round';
+
+                const drawFrame = (now) => {
+                    const progress = Math.min(1, (now - startTime) / duration);
+                    const segmentCount = Math.max(1, Math.floor((total - 1) * progress));
+                    ctx.beginPath();
+                    ctx.moveTo(points[0].x, points[0].y);
+                    for (let index = 1; index <= segmentCount && index < points.length; index++) {
+                        ctx.lineTo(points[index].x, points[index].y);
+                    }
+                    if (segmentCount < points.length - 1) {
+                        const nextIndex = segmentCount + 1;
+                        const ratio = ((total - 1) * progress) - segmentCount;
+                        const current = points[segmentCount];
+                        const next = points[nextIndex];
+                        const x = current.x + (next.x - current.x) * ratio;
+                        const y = current.y + (next.y - current.y) * ratio;
+                        ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                    if (progress < 1) {
+                        requestAnimationFrame(drawFrame);
+                    }
+                };
+
+                requestAnimationFrame(drawFrame);
+            }
+
+            /**
+             * Draw the disease severity gauge on the result canvas.
+             */
+            function drawSeverityGauge(confidence, qualityScore, label) {
+                const ctx = severityGauge.getContext('2d');
+                if (!ctx) return;
+                const width = severityGauge.clientWidth || 220;
+                const height = severityGauge.clientHeight || 110;
+                const ratio = window.devicePixelRatio || 1;
+                severityGauge.width = width * ratio;
+                severityGauge.height = height * ratio;
+                ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+                ctx.clearRect(0, 0, width, height);
+
+                const radius = Math.min(width * 0.42, height * 0.8);
+                const centerX = width / 2;
+                const centerY = height * 1.02;
+                const startAngle = Math.PI;
+                const maxAngle = 2 * Math.PI;
+                const score = (confidence * 0.6) + ((qualityScore / 100) * 0.4);
+                let category = 'Low Risk';
+                let color = '#00ff88';
+                if (label.toLowerCase().includes('healthy')) {
+                    category = 'Low Risk';
+                    color = '#00ff88';
+                } else if (confidence < 0.5) {
+                    category = 'Uncertain';
+                    color = '#ffd84d';
+                } else if (score > 0.75) {
+                    category = 'High Risk';
+                    color = '#ff4d4d';
+                } else if (score > 0.50) {
+                    category = 'Medium Risk';
+                    color = '#ffd84d';
+                }
+                const targetAngle = startAngle + Math.min(Math.max(score, 0), 1) * Math.PI;
+
+                const renderGauge = (angle) => {
+                    ctx.clearRect(0, 0, width, height);
+                    ctx.lineWidth = 12;
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, startAngle, maxAngle, false);
+                    ctx.stroke();
+                    ctx.strokeStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, radius, startAngle, angle, false);
+                    ctx.stroke();
+                    const needleAngle = angle;
+                    const needleLength = radius - 6;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX, centerY);
+                    ctx.lineTo(
+                        centerX + Math.cos(needleAngle) * needleLength,
+                        centerY + Math.sin(needleAngle) * needleLength,
+                    );
+                    ctx.stroke();
+                };
+
+                const animateGauge = (timestamp, start) => {
+                    const step = start || timestamp;
+                    const elapsed = timestamp - step;
+                    const progress = Math.min(1, elapsed / 900);
+                    const currentAngle = startAngle + (targetAngle - startAngle) * progress;
+                    renderGauge(currentAngle);
+                    if (progress < 1) {
+                        requestAnimationFrame((next) => animateGauge(next, step));
+                    }
+                };
+                requestAnimationFrame(animateGauge);
+                severityText.textContent = category;
+                severityText.style.color = color;
+            }
+
+            const GRID_CELL = 44;
+            const GRID_GLOW_RADIUS = 140;
+            let gridMouse = { x: -9999, y: -9999 };
+            let gridCells = [];
+            let gridCanvas, gridCtx;
+
+            function setupGrid() {
+                gridCanvas = document.getElementById('gridOverlay');
+                gridCtx = gridCanvas.getContext('2d');
+                gridCanvas.width = window.innerWidth * devicePixelRatio;
+                gridCanvas.height = window.innerHeight * devicePixelRatio;
+                gridCanvas.style.width = window.innerWidth + 'px';
+                gridCanvas.style.height = window.innerHeight + 'px';
+                const cols = Math.ceil(gridCanvas.width / GRID_CELL) + 1;
+                const rows = Math.ceil(gridCanvas.height / GRID_CELL) + 1;
+                gridCells = [];
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) {
+                        gridCells.push({ x: c * GRID_CELL, y: r * GRID_CELL, glow: 0 });
+                    }
+                }
+            }
+
+            function drawGrid() {
+                gridCtx.clearRect(0, 0, gridCanvas.width, gridCanvas.height);
+                for (const cell of gridCells) {
+                    const cx = cell.x + GRID_CELL / 2;
+                    const cy = cell.y + GRID_CELL / 2;
+                    const dist = Math.hypot(gridMouse.x - cx, gridMouse.y - cy);
+                    const proximity = Math.max(0, 1 - dist / GRID_GLOW_RADIUS);
+                    cell.glow += (proximity - cell.glow) * 0.15;
+                    const alpha = 0.08 + cell.glow * 0.6;
+                    gridCtx.strokeStyle = `rgba(255,255,255,${alpha})`;
+                    gridCtx.lineWidth = 0.5 + cell.glow * 1.2;
+                    gridCtx.strokeRect(cell.x, cell.y, GRID_CELL, GRID_CELL);
+                    if (cell.glow > 0.05) {
+                        gridCtx.fillStyle = `rgba(255,255,255,${cell.glow * 0.07})`;
+                        gridCtx.fillRect(cell.x, cell.y, GRID_CELL, GRID_CELL);
+                    }
+                    if (cell.glow > 0.4) {
+                        gridCtx.beginPath();
+                        gridCtx.arc(cx, cy, 1.5, 0, Math.PI * 2);
+                        gridCtx.fillStyle = `rgba(255,255,255,${(cell.glow - 0.4) * 1.8})`;
+                        gridCtx.fill();
+                    }
+                }
+                requestAnimationFrame(drawGrid);
+            }
+
+            // Intersection Observer for reveal animations
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+            // Setup grid background effect
+            setupGrid();
+            drawGrid();
+
+            // Mouse tracking for grid effect
+            document.addEventListener('mousemove', (e) => {
+                gridMouse.x = e.clientX * devicePixelRatio;
+                gridMouse.y = e.clientY * devicePixelRatio;
+                const cursor = document.getElementById('customCursor');
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+
+            // Resize handler for grid
+            window.addEventListener('resize', () => {
+                setupGrid();
+            });
+
+            
+            // Stats counter animation
+            function countUpStat(element, targetValue, duration = 1500) {
+                const startValue = 0;
+                const startTime = Date.now();
+                const suffix = element.textContent.replace(/[0-9]/g, '');
+
+                const animate = () => {
+                    const elapsed = Date.now() - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const easeOutQuad = 1 - Math.pow(1 - progress, 2);
+                    const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOutQuad);
+                    element.textContent = currentValue + suffix;
+
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    }
+                };
+                animate();
+            }
+
+            // Observe stat items for animation
+            const statObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !entry.target.classList.contains('counted')) {
+                        entry.target.classList.add('counted');
+                        const targetValue = parseInt(entry.target.getAttribute('data-stat'));
+                        countUpStat(entry.target, targetValue);
+                    }
+                });
+            }, { threshold: 0.3 });
+
+            document.querySelectorAll('.stat-number[data-stat]').forEach(el => statObserver.observe(el));
+
+
+            // Load initial history and comparator data
+            loadHistory();
+            fetchTrainingHistory();
+        </script>
+    </body>
 </html>
