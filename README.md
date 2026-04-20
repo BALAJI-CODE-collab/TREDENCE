@@ -43,11 +43,11 @@ History saved for future reference + PDF export
 
 ## New Frontend Features (Beyond Basic Case Study)
 
-### 🎨 Cursor-Reactive Grid Background
+### Cursor-Reactive Grid Background
 A dynamic black and white grid overlay that responds to mouse movement with a glowing
 halo effect, creating an immersive technical atmosphere. Uses Canvas API for smooth 60fps animation.
 
-### 📊 Research Findings Dashboard
+### Research Findings Dashboard
 A comprehensive section dedicated to lambda sparsity analysis:
 
 **Lambda Comparison Results Table**
@@ -72,7 +72,7 @@ A comprehensive section dedicated to lambda sparsity analysis:
 - Secondary cluster at 0.8–1.0 (active gates)
 - Proof that the network learned true sparsity
 
-### 🏗️ Network Architecture Flow Visualization
+### Network Architecture Flow Visualization
 Educational visualization showing the exact data flow through your pruned neural network:
 
 **Part A: Convolutional Layers (Feature Extraction)**
@@ -94,7 +94,7 @@ Both parts include:
 - Pruning percentages for FC layers showing actual learned sparsity
 - Smooth animations when appearing after image analysis
 
-### 📈 Sparsity by Layer Breakdown
+### Sparsity by Layer Breakdown
 Visual cards showing how aggressively each network layer was pruned:
 
 - **Conv1**: 22% sparse (early feature extraction needs diversity)
@@ -104,7 +104,7 @@ Visual cards showing how aggressively each network layer was pruned:
 
 Includes detailed insights explaining WHY fully-connected layers prune more than convolutional layers.
 
-### 🚀 Enhanced Landing Page
+### Enhanced Landing Page
 Five new major sections:
 
 **1. Marquee Hero Tagline Strip**
