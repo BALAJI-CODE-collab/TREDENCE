@@ -72,6 +72,28 @@ A comprehensive section dedicated to lambda sparsity analysis:
 - Secondary cluster at 0.8–1.0 (active gates)
 - Proof that the network learned true sparsity
 
+### 🏗️ Network Architecture Flow Visualization
+Educational visualization showing the exact data flow through your pruned neural network:
+
+**Part A: Convolutional Layers (Feature Extraction)**
+- Conv1 → Conv2 → Conv3 with dimension tracking (224×224×3 → 14×14×128)
+- Shows 32, 64, and 128 filter counts
+- Explains what each layer detects: edges → textures → disease patterns
+- Interactive data flow diagram with dimension progression
+
+**Part B: Fully Connected Layers (Classification)**
+- FC1 (68% pruned) → FC2 (45% pruned) → Output (3 classes)
+- Shows neuron counts and pruning percentages in red
+- Explains why FC layers have extreme redundancy
+- Demonstrates feature aggregation: 2048 → 512 → 256 → 3
+- Red-highlighted pruning stats show impact of self-learning
+
+Both parts include:
+- Educational descriptions explaining the purpose of each section
+- Data dimension flow with visual arrows
+- Pruning percentages for FC layers showing actual learned sparsity
+- Smooth animations when appearing after image analysis
+
 ### 📈 Sparsity by Layer Breakdown
 Visual cards showing how aggressively each network layer was pruned:
 
@@ -398,6 +420,20 @@ The frontend is a single HTML file with no external frameworks.
 Key UI features:
 
 - Animated neural network canvas background showing nodes connecting and pruning
+- **Interactive Network Visualizer** (appears right after image analysis)
+  - Lambda slider showing 3 pruning strategies: Light (0.0001) → Sweet Spot (0.001) → Aggressive (0.01)
+  - Real-time canvas visualization of active (bright green) vs pruned (bright red) nodes
+  - Interactive connections fade as lambda increases
+  - Statistics panel: Active Gates, Pruned Gates, Sparsity %
+  - Smooth fade-in animation when results appear
+- **Network Architecture Flow** visualization (follows after visualizer)
+  - Part A: Convolutional layers (Conv1→Conv2→Conv3) showing feature extraction
+  - Part B: Fully connected layers (FC1→FC2→Output) showing classification
+  - Displays actual layer structure with filter counts and dimensions
+  - Shows data flow progression: 224×224×3 → 14×14×128 → 2048 → 3
+  - Bright cyan text for excellent visibility on dark background
+  - Pruning percentages highlighted in red for FC layers
+  - Educational descriptions explaining each layer's purpose
 - Drag and drop upload with scan line animation on image preview
 - 4-step processing indicator with spinners and checkmarks
 - Animated SVG confidence ring
@@ -548,6 +584,14 @@ This signature bimodal shape proves the network learned true sparsity rather tha
 - Animated bar charts
 - Detailed insights
 
+### Network Architecture Flow (NEW)
+- Part A: Convolutional Layers (Conv1 → Conv2 → Conv3)
+- Part B: Fully Connected Layers (FC1 → FC2 → Output)
+- Data dimension progression visualization
+- Pruning percentage indicators for FC layers
+- Appears dynamically after image analysis
+- Educational descriptions for each layer
+
 ### Technology Stack
 - 6 tech cards with icons and descriptions
 
@@ -556,6 +600,20 @@ This signature bimodal shape proves the network learned true sparsity rather tha
 - Real-time preprocessing report
 - Confidence visualization
 - Disease classification result
+
+### Interactive Neural Network Pruning Visualizer
+- Lambda slider (Light 0.0001 → Sweet Spot 0.001 → Aggressive 0.01)
+- Interactive canvas showing nodes and connections
+- Red nodes/connections show pruned gates as lambda increases
+- Real-time stats: Active Gates, Pruned Gates, Sparsity %
+- **Appears dynamically right after image analysis completes**
+
+### Network Architecture Flow Visualization
+- Part A: Convolutional layers (Conv1→Conv2→Conv3)
+- Part B: Fully connected layers (FC1→FC2→Output)
+- Data dimension progression display
+- Pruning percentages for FC layers
+- Educational descriptions
 
 ### Upload History Portal
 - All previous uploads with thumbnails

@@ -2124,6 +2124,15 @@
             .network-visualizer-section {
                 display: grid;
                 gap: 24px;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all 0.6s ease;
+                pointer-events: none;
+            }
+            .network-visualizer-section.revealed {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
             }
             .network-visualizer-header {
                 margin-bottom: 12px;
@@ -2133,10 +2142,136 @@
                 font-size: clamp(1.4rem, 2.6vw, 2rem);
                 font-weight: 700;
             }
-            .network-visualizer-subtitle {
+            /* Network Architecture Visualization */
+            .network-architecture-section {
+                display: grid;
+                gap: 24px;
+                opacity: 0;
+                transform: translateY(20px);
+                transition: all 0.6s ease;
+                pointer-events: none;
+            }
+            .network-architecture-section.revealed {
+                opacity: 1;
+                transform: translateY(0);
+                pointer-events: auto;
+            }
+            .architecture-header {
+                margin-bottom: 12px;
+            }
+            .architecture-title {
+                margin: 0 0 8px;
+                font-size: clamp(1.4rem, 2.6vw, 2rem);
+                font-weight: 700;
+            }
+            .architecture-subtitle {
                 margin: 0;
-                color: var(--muted);
+                color: #00ffff;
                 font-size: 0.95rem;
+            }
+            .architecture-container {
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: var(--radius-lg);
+                padding: 24px;
+                display: grid;
+                gap: 24px;
+            }
+            .architecture-part {
+                display: grid;
+                gap: 16px;
+            }
+            .part-label {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 8px;
+            }
+            .part-badge {
+                background: rgba(0, 255, 136, 0.15);
+                border: 1px solid rgba(0, 255, 136, 0.3);
+                color: var(--primary);
+                padding: 4px 12px;
+                border-radius: 999px;
+                font-size: 0.75rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+            }
+            .part-title {
+                margin: 0;
+                font-size: 1.2rem;
+                font-weight: 700;
+            }
+            .layer-flow {
+                display: grid;
+                gap: 12px;
+                grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            }
+            .layer-box {
+                background: rgba(0, 255, 136, 0.05);
+                border: 2px solid rgba(0, 255, 136, 0.2);
+                border-radius: var(--radius-md);
+                padding: 16px;
+                text-align: center;
+                position: relative;
+                transition: all 0.3s ease;
+            }
+            .layer-box:hover {
+                border-color: rgba(0, 255, 136, 0.5);
+                background: rgba(0, 255, 136, 0.1);
+                transform: translateY(-2px);
+            }
+            .layer-name {
+                margin: 0 0 8px;
+                font-size: 0.95rem;
+                font-weight: 700;
+                color: var(--primary);
+            }
+            .layer-info {
+                margin: 0;
+                font-size: 0.8rem;
+                color: #00ffff;
+                line-height: 1.4;
+            }
+            .layer-explanation {
+                margin-top: 12px;
+                padding-top: 12px;
+                border-top: 1px solid rgba(0, 255, 136, 0.1);
+            }
+            .part-description {
+                background: rgba(0, 255, 136, 0.03);
+                border-left: 3px solid rgba(0, 255, 136, 0.3);
+                padding: 16px;
+                border-radius: 4px;
+                color: #00ffff;
+                font-size: 0.9rem;
+                line-height: 1.6;
+            }
+            .data-flow-visual {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 8px;
+                margin-top: 12px;
+                padding: 12px;
+                background: rgba(0, 255, 136, 0.02);
+                border-radius: var(--radius-md);
+            }
+            .data-box {
+                background: rgba(0, 255, 136, 0.1);
+                border: 1px solid rgba(0, 255, 136, 0.2);
+                padding: 8px 12px;
+                border-radius: 4px;
+                font-size: 0.75rem;
+                font-weight: 600;
+                color: var(--primary);
+                text-align: center;
+            }
+            .arrow-flow {
+                color: var(--primary);
+                font-size: 1.2rem;
+                opacity: 0.6;
             }
             .network-canvas-wrapper {
                 background: var(--card-strong);
@@ -2766,6 +2901,134 @@
                             </div>
                         </div>
                     </section>
+                    
+                    <!-- Interactive Network Visualizer -->
+                    <section class="section-shell" id="network-visualizer">
+                        <div class="network-visualizer-section">
+                            <div class="network-visualizer-header">
+                                <h2 class="network-visualizer-title">🧠 Neural Network Pruning Visualizer</h2>
+                                <p class="network-visualizer-subtitle">Watch connections fade as lambda increases. Nodes turn red when gates are pruned to zero.</p>
+                            </div>
+                            <div class="network-canvas-wrapper">
+                                <canvas id="networkCanvas" width="600" height="400"></canvas>
+                                <div class="network-slider-container">
+                                    <div class="slider-label">
+                                        <span>Sparsity Pressure (Lambda)</span>
+                                        <span class="slider-value" id="lambdaValue">0.001</span>
+                                    </div>
+                                    <input type="range" id="lambdaSlider" class="network-slider" min="0" max="3" step="1" value="1">
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted);">
+                                        <span>Light (0.0001)</span>
+                                        <span>Sweet Spot (0.001)</span>
+                                        <span>Aggressive (0.01)</span>
+                                    </div>
+                                </div>
+                                <div class="network-stats">
+                                    <div class="network-stat">
+                                        <p class="network-stat-label">Active Gates</p>
+                                        <p class="network-stat-value" id="activeGates">512</p>
+                                    </div>
+                                    <div class="network-stat">
+                                        <p class="network-stat-label">Pruned Gates</p>
+                                        <p class="network-stat-value" id="prunedGates">0</p>
+                                    </div>
+                                    <div class="network-stat">
+                                        <p class="network-stat-label">Sparsity</p>
+                                        <p class="network-stat-value" id="sparsityPercent">0%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Network Architecture Visualization -->
+                    <section class="section-shell">
+                        <div class="network-architecture-section" id="architectureSection">
+                            <div class="architecture-header">
+                                <h2 class="architecture-title">🏗️ Network Architecture Flow</h2>
+                                <p class="architecture-subtitle">Your uploaded image flows through this pruned neural network. Red connections are removed gates.</p>
+                            </div>
+                            <div class="architecture-container">
+                                <!-- Part A: Convolutional Layers -->
+                                <div class="architecture-part">
+                                    <div class="part-label">
+                                        <span class="part-badge">Part A</span>
+                                        <h3 class="part-title">Convolutional Layers (Feature Extraction)</h3>
+                                    </div>
+                                    <div class="part-description">
+                                        <strong>Purpose:</strong> Extract visual features from your leaf image. Each convolution layer detects different patterns: edges, textures, shapes, and disease indicators.
+                                    </div>
+                                    <div class="layer-flow">
+                                        <div class="layer-box">
+                                            <div class="layer-name">Conv1</div>
+                                            <div class="layer-info">32 filters<br/>3×3 kernel</div>
+                                            <div class="layer-explanation" style="font-size: 0.75rem; color: var(--primary);">Detects basic edges and color patterns</div>
+                                        </div>
+                                        <div style="display: flex; align-items: center; justify-content: center;">→</div>
+                                        <div class="layer-box">
+                                            <div class="layer-name">Conv2</div>
+                                            <div class="layer-info">64 filters<br/>3×3 kernel</div>
+                                            <div class="layer-explanation" style="font-size: 0.75rem; color: var(--primary);">Combines edges into shapes and textures</div>
+                                        </div>
+                                        <div style="display: flex; align-items: center; justify-content: center;">→</div>
+                                        <div class="layer-box">
+                                            <div class="layer-name">Conv3</div>
+                                            <div class="layer-info">128 filters<br/>3×3 kernel</div>
+                                            <div class="layer-explanation" style="font-size: 0.75rem; color: var(--primary);">Detects disease-specific patterns</div>
+                                        </div>
+                                    </div>
+                                    <div class="data-flow-visual">
+                                        <div class="data-box">Input: 224×224×3</div>
+                                        <span class="arrow-flow">→</span>
+                                        <div class="data-box">56×56×32</div>
+                                        <span class="arrow-flow">→</span>
+                                        <div class="data-box">28×28×64</div>
+                                        <span class="arrow-flow">→</span>
+                                        <div class="data-box">14×14×128</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Part B: Fully Connected Layers -->
+                                <div class="architecture-part">
+                                    <div class="part-label">
+                                        <span class="part-badge">Part B</span>
+                                        <h3 class="part-title">Fully Connected Layers (Classification)</h3>
+                                    </div>
+                                    <div class="part-description">
+                                        <strong>Purpose:</strong> Analyze extracted features and make the final disease prediction. These layers have the highest sparsity (many pruned gates) because they're redundant.
+                                    </div>
+                                    <div class="layer-flow">
+                                        <div class="layer-box">
+                                            <div class="layer-name">FC1</div>
+                                            <div class="layer-info">512 neurons<br/><span style="color: var(--danger);">68% pruned</span></div>
+                                            <div class="layer-explanation" style="font-size: 0.75rem;">Aggregates all features</div>
+                                        </div>
+                                        <div style="display: flex; align-items: center; justify-content: center;">→</div>
+                                        <div class="layer-box">
+                                            <div class="layer-name">FC2</div>
+                                            <div class="layer-info">256 neurons<br/><span style="color: var(--danger);">45% pruned</span></div>
+                                            <div class="layer-explanation" style="font-size: 0.75rem;">Learns decision boundaries</div>
+                                        </div>
+                                        <div style="display: flex; align-items: center; justify-content: center;">→</div>
+                                        <div class="layer-box">
+                                            <div class="layer-name">Output</div>
+                                            <div class="layer-info">3 classes<br/>Healthy/Disease A/B</div>
+                                            <div class="layer-explanation" style="font-size: 0.75rem;">Final prediction</div>
+                                        </div>
+                                    </div>
+                                    <div class="data-flow-visual">
+                                        <div class="data-box">Flattened: 2048</div>
+                                        <span class="arrow-flow">→</span>
+                                        <div class="data-box">512</div>
+                                        <span class="arrow-flow">→</span>
+                                        <div class="data-box">256</div>
+                                        <span class="arrow-flow">→</span>
+                                        <div class="data-box">3</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                     <section class="section-shell reveal" id="comparisonSection">
                         <div class="glass-card comparison-panel" id="comparisonPanel">
                             <h2 class="panel-title">Preprocessor Comparison</h2>
@@ -2863,45 +3126,6 @@
                                         <span id="modelSizeText">0</span>
                                     </div>
                                     <p>Estimated checkpoint memory footprint.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                    
-                    <!-- Interactive Network Visualizer -->
-                    <section class="section-shell" id="network-visualizer">
-                        <div class="network-visualizer-section">
-                            <div class="network-visualizer-header">
-                                <h2 class="network-visualizer-title">🧠 Neural Network Pruning Visualizer</h2>
-                                <p class="network-visualizer-subtitle">Watch connections fade as lambda increases. Nodes turn grey when gates are pruned to zero.</p>
-                            </div>
-                            <div class="network-canvas-wrapper">
-                                <canvas id="networkCanvas" width="600" height="400"></canvas>
-                                <div class="network-slider-container">
-                                    <div class="slider-label">
-                                        <span>Sparsity Pressure (Lambda)</span>
-                                        <span class="slider-value" id="lambdaValue">0.001</span>
-                                    </div>
-                                    <input type="range" id="lambdaSlider" class="network-slider" min="0" max="3" step="1" value="1">
-                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted);">
-                                        <span>Light (0.0001)</span>
-                                        <span>Sweet Spot (0.001)</span>
-                                        <span>Aggressive (0.01)</span>
-                                    </div>
-                                </div>
-                                <div class="network-stats">
-                                    <div class="network-stat">
-                                        <p class="network-stat-label">Active Gates</p>
-                                        <p class="network-stat-value" id="activeGates">512</p>
-                                    </div>
-                                    <div class="network-stat">
-                                        <p class="network-stat-label">Pruned Gates</p>
-                                        <p class="network-stat-value" id="prunedGates">0</p>
-                                    </div>
-                                    <div class="network-stat">
-                                        <p class="network-stat-label">Sparsity</p>
-                                        <p class="network-stat-value" id="sparsityPercent">0%</p>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -3079,6 +3303,16 @@
                 analyzeBtn.disabled = true;
                 resetResults();
                 resetSteps();
+                
+                // Hide architecture and network visualizer when clearing
+                const architectureSection = document.querySelector('.network-architecture-section');
+                if (architectureSection) {
+                    architectureSection.classList.remove('revealed');
+                }
+                const networkSection = document.querySelector('.network-visualizer-section');
+                if (networkSection) {
+                    networkSection.classList.remove('revealed');
+                }
             });
 
             // Analysis functionality
@@ -3140,6 +3374,25 @@
                     // Update results
                     updateResults(result);
                     resultsPanel.classList.add('revealed');
+                    
+                    // Reveal network architecture visualization after analysis
+                    const architectureSection = document.querySelector('.network-architecture-section');
+                    if (architectureSection) {
+                        setTimeout(() => {
+                            architectureSection.classList.add('revealed');
+                        }, 200);
+                    }
+                    
+                    // Reveal neural network visualizer after analysis
+                    const networkSection = document.querySelector('.network-visualizer-section');
+                    if (networkSection) {
+                        setTimeout(() => {
+                            networkSection.classList.add('revealed');
+                            // Redraw network when revealed
+                            drawNetwork();
+                        }, 200);
+                    }
+                    
                     showToast('Analysis complete!', 'success');
 
                 } catch (error) {
@@ -3751,7 +4004,7 @@
                     const opacity = conn.active ? 0.6 : 0.1;
                     const color = conn.active 
                         ? `rgba(0, 255, 136, ${opacity})`
-                        : `rgba(100, 100, 100, ${opacity})`;
+                        : `rgba(255, 50, 50, ${opacity})`;
 
                     networkCtx.strokeStyle = color;
                     networkCtx.beginPath();
@@ -3764,7 +4017,7 @@
                 nodes.forEach(node => {
                     const color = node.active
                         ? 'rgba(0, 255, 136, 1)'
-                        : 'rgba(100, 100, 100, 0.4)';
+                        : 'rgba(255, 50, 50, 0.4)';
 
                     const glowOpacity = node.active ? 0.3 : 0;
                     networkCtx.shadowColor = `rgba(0, 255, 136, ${glowOpacity})`;
