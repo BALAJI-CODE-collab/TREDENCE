@@ -2120,6 +2120,125 @@
                     padding: 20px;
                 }
             }
+            /* Interactive Network Visualizer */
+            .network-visualizer-section {
+                display: grid;
+                gap: 24px;
+            }
+            .network-visualizer-header {
+                margin-bottom: 12px;
+            }
+            .network-visualizer-title {
+                margin: 0 0 8px;
+                font-size: clamp(1.4rem, 2.6vw, 2rem);
+                font-weight: 700;
+            }
+            .network-visualizer-subtitle {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.95rem;
+            }
+            .network-canvas-wrapper {
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: var(--radius-lg);
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            #networkCanvas {
+                width: 100%;
+                max-width: 600px;
+                margin: 0 auto;
+                background: rgba(5, 10, 5, 0.4);
+                border: 1px solid rgba(0, 255, 136, 0.1);
+                border-radius: var(--radius-lg);
+                display: block;
+            }
+            .network-slider-container {
+                display: grid;
+                gap: 8px;
+            }
+            .slider-label {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                font-size: 0.9rem;
+                font-weight: 600;
+            }
+            .slider-value {
+                color: var(--primary);
+                font-family: 'Courier New', monospace;
+                font-size: 1rem;
+            }
+            .network-slider {
+                width: 100%;
+                height: 8px;
+                border-radius: 4px;
+                background: linear-gradient(90deg, rgba(0, 255, 136, 0.1), rgba(0, 255, 136, 0.3));
+                outline: none;
+                -webkit-appearance: none;
+                appearance: none;
+                cursor: pointer;
+            }
+            .network-slider::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                cursor: pointer;
+                box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+                border: 2px solid rgba(0, 255, 136, 0.6);
+                transition: all 0.2s ease;
+            }
+            .network-slider::-webkit-slider-thumb:hover {
+                box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+                transform: scale(1.15);
+            }
+            .network-slider::-moz-range-thumb {
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, var(--primary), var(--secondary));
+                cursor: pointer;
+                box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+                border: 2px solid rgba(0, 255, 136, 0.6);
+                transition: all 0.2s ease;
+            }
+            .network-slider::-moz-range-thumb:hover {
+                box-shadow: 0 0 20px rgba(0, 255, 136, 0.6);
+                transform: scale(1.15);
+            }
+            .network-stats {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+                margin-top: 12px;
+            }
+            .network-stat {
+                background: rgba(0, 255, 136, 0.05);
+                border: 1px solid rgba(0, 255, 136, 0.1);
+                border-radius: var(--radius-md);
+                padding: 12px;
+                text-align: center;
+            }
+            .network-stat-label {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.08em;
+                font-weight: 600;
+            }
+            .network-stat-value {
+                margin: 4px 0 0;
+                font-size: 1.3rem;
+                font-weight: 700;
+                color: var(--primary);
+            }
         </style>
     </head>
     <body>
@@ -2748,6 +2867,46 @@
                             </div>
                         </div>
                     </section>
+                    
+                    <!-- Interactive Network Visualizer -->
+                    <section class="section-shell" id="network-visualizer">
+                        <div class="network-visualizer-section">
+                            <div class="network-visualizer-header">
+                                <h2 class="network-visualizer-title">🧠 Neural Network Pruning Visualizer</h2>
+                                <p class="network-visualizer-subtitle">Watch connections fade as lambda increases. Nodes turn grey when gates are pruned to zero.</p>
+                            </div>
+                            <div class="network-canvas-wrapper">
+                                <canvas id="networkCanvas" width="600" height="400"></canvas>
+                                <div class="network-slider-container">
+                                    <div class="slider-label">
+                                        <span>Sparsity Pressure (Lambda)</span>
+                                        <span class="slider-value" id="lambdaValue">0.001</span>
+                                    </div>
+                                    <input type="range" id="lambdaSlider" class="network-slider" min="0" max="3" step="1" value="1">
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted);">
+                                        <span>Light (0.0001)</span>
+                                        <span>Sweet Spot (0.001)</span>
+                                        <span>Aggressive (0.01)</span>
+                                    </div>
+                                </div>
+                                <div class="network-stats">
+                                    <div class="network-stat">
+                                        <p class="network-stat-label">Active Gates</p>
+                                        <p class="network-stat-value" id="activeGates">512</p>
+                                    </div>
+                                    <div class="network-stat">
+                                        <p class="network-stat-label">Pruned Gates</p>
+                                        <p class="network-stat-value" id="prunedGates">0</p>
+                                    </div>
+                                    <div class="network-stat">
+                                        <p class="network-stat-label">Sparsity</p>
+                                        <p class="network-stat-value" id="sparsityPercent">0%</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    
                     <section class="section-shell reveal" id="lambdaComparator">
                         <div class="glass-card lambda-panel">
                             <div class="lambda-refresh-row">
@@ -3468,6 +3627,165 @@
                 severityText.style.color = color;
             }
 
+            // ============= Interactive Network Visualizer =============
+            const lambdaValues = [0.0001, 0.001, 0.01];
+            let currentLambdaIndex = 1; // Start with sweet spot
+            let networkCanvas, networkCtx;
+            let nodes = [];
+            let connections = [];
+
+            function initNetworkVisualizer() {
+                networkCanvas = document.getElementById('networkCanvas');
+                networkCtx = networkCanvas.getContext('2d');
+                
+                if (!networkCanvas) return;
+
+                // Create simple 3-layer network: input -> hidden -> output
+                const layers = [
+                    { count: 6, x: 50 },    // Input layer
+                    { count: 8, x: 300 },   // Hidden layer
+                    { count: 3, x: 550 }    // Output layer (3 diseases)
+                ];
+
+                nodes = [];
+                let nodeId = 0;
+
+                // Create nodes for each layer
+                layers.forEach((layer, layerIdx) => {
+                    const startY = (networkCanvas.height - (layer.count - 1) * 40) / 2;
+                    for (let i = 0; i < layer.count; i++) {
+                        nodes.push({
+                            id: nodeId++,
+                            layer: layerIdx,
+                            x: layer.x,
+                            y: startY + i * 40,
+                            radius: 12,
+                            active: true,
+                            gateValue: Math.random() * 0.3 + 0.7  // Start mostly active
+                        });
+                    }
+                });
+
+                // Create connections between layers
+                connections = [];
+                for (let l = 0; l < layers.length - 1; l++) {
+                    const currentLayer = nodes.filter(n => n.layer === l);
+                    const nextLayer = nodes.filter(n => n.layer === l + 1);
+                    
+                    currentLayer.forEach(from => {
+                        nextLayer.forEach(to => {
+                            connections.push({
+                                from: from.id,
+                                to: to.id,
+                                active: true,
+                                weight: Math.random()
+                            });
+                        });
+                    });
+                }
+
+                // Setup slider
+                const slider = document.getElementById('lambdaSlider');
+                slider.addEventListener('input', (e) => {
+                    currentLambdaIndex = parseInt(e.target.value);
+                    updateNetworkPruning();
+                    updateNetworkStats();
+                    drawNetwork();
+                });
+
+                updateNetworkPruning();
+                drawNetwork();
+            }
+
+            function updateNetworkPruning() {
+                const lambda = lambdaValues[currentLambdaIndex];
+                const lambdaLabel = document.getElementById('lambdaValue');
+                lambdaLabel.textContent = lambda.toFixed(4);
+
+                // Simulate gate pruning: higher lambda = more aggressive pruning
+                const pruningThreshold = currentLambdaIndex * 0.25;
+
+                connections.forEach(conn => {
+                    // Simulate L1 sparsity: connections with lower initial weight get pruned more aggressively
+                    const pruneProbability = Math.max(0, (1 - conn.weight) * (pruningThreshold + 0.3));
+                    conn.active = Math.random() > pruneProbability;
+                });
+
+                // Mark nodes as inactive if all their input connections are pruned
+                nodes.forEach(node => {
+                    if (node.layer === 0) {
+                        node.active = true; // Input nodes always active
+                    } else {
+                        const incomingConnections = connections.filter(c => 
+                            nodes[c.to].layer === node.layer && c.to === node.id
+                        );
+                        node.active = incomingConnections.some(c => c.active);
+                    }
+                });
+            }
+
+            function updateNetworkStats() {
+                const totalGates = nodes.length - nodes.filter(n => n.layer === 0).length;
+                const activeGates = nodes.filter(n => n.active && n.layer > 0).length;
+                const prunedGates = totalGates - activeGates;
+                const sparsity = totalGates > 0 ? Math.round((prunedGates / totalGates) * 100) : 0;
+
+                document.getElementById('activeGates').textContent = activeGates;
+                document.getElementById('prunedGates').textContent = prunedGates;
+                document.getElementById('sparsityPercent').textContent = sparsity + '%';
+            }
+
+            function drawNetwork() {
+                if (!networkCanvas || !networkCtx) return;
+
+                networkCtx.clearRect(0, 0, networkCanvas.width, networkCanvas.height);
+
+                // Draw connections first
+                networkCtx.lineWidth = 2;
+                connections.forEach(conn => {
+                    const fromNode = nodes[conn.from];
+                    const toNode = nodes[conn.to];
+
+                    if (!fromNode || !toNode) return;
+
+                    const opacity = conn.active ? 0.6 : 0.1;
+                    const color = conn.active 
+                        ? `rgba(0, 255, 136, ${opacity})`
+                        : `rgba(100, 100, 100, ${opacity})`;
+
+                    networkCtx.strokeStyle = color;
+                    networkCtx.beginPath();
+                    networkCtx.moveTo(fromNode.x, fromNode.y);
+                    networkCtx.lineTo(toNode.x, toNode.y);
+                    networkCtx.stroke();
+                });
+
+                // Draw nodes
+                nodes.forEach(node => {
+                    const color = node.active
+                        ? 'rgba(0, 255, 136, 1)'
+                        : 'rgba(100, 100, 100, 0.4)';
+
+                    const glowOpacity = node.active ? 0.3 : 0;
+                    networkCtx.shadowColor = `rgba(0, 255, 136, ${glowOpacity})`;
+                    networkCtx.shadowBlur = node.active ? 12 : 0;
+
+                    networkCtx.fillStyle = color;
+                    networkCtx.beginPath();
+                    networkCtx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
+                    networkCtx.fill();
+
+                    // Draw border
+                    networkCtx.strokeStyle = color;
+                    networkCtx.lineWidth = 2;
+                    networkCtx.stroke();
+
+                    networkCtx.shadowBlur = 0;
+                });
+            }
+
+            // ============= End Network Visualizer =============
+
             const GRID_CELL = 44;
             const GRID_GLOW_RADIUS = 140;
             let gridMouse = { x: -9999, y: -9999 };
@@ -3531,6 +3849,9 @@
             // Setup grid background effect
             setupGrid();
             drawGrid();
+            
+            // Initialize network visualizer
+            initNetworkVisualizer();
 
             // Mouse tracking for grid effect
             document.addEventListener('mousemove', (e) => {
