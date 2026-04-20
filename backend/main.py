@@ -348,6 +348,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="PruneVision", version="1.0.0", lifespan=lifespan)
 app.mount("/uploads/files", StaticFiles(directory=DEFAULT_UPLOADS_DIR), name="uploads-files")
+
+# Serve frontend
+app.mount("/frontend", StaticFiles(directory=BASE_DIR / "frontend", html=True), name="frontend")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

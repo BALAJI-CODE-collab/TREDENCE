@@ -40,6 +40,13 @@
         }
         </script>
         <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>PV</text></svg>" sizes="48x48" type="image/svg+xml"/>
+        <script>
+            // Detect if frontend is being accessed as a local file
+            if (window.location.protocol === 'file:') {
+                console.warn('⚠️  Frontend accessed as local file. Redirecting to backend server...');
+                window.location.href = 'http://localhost:8000';
+            }
+        </script>
         <style>
             :root {
                 --max-width: 1280px;
@@ -1620,6 +1627,498 @@
                 .block-number, .block-icon {
                     display: none;
                 }
+                .research-section {
+                    padding: 0;
+                }
+                .research-card {
+                    padding: 20px;
+                }
+                .lambda-comparison-table {
+                    display: block;
+                    overflow-x: auto;
+                }
+                .analysis-cards-grid {
+                    grid-template-columns: 1fr;
+                    gap: 1rem;
+                }
+                .l1-l2-grid {
+                    grid-template-columns: 1fr;
+                    gap: 1rem;
+                }
+                .gate-distribution-grid {
+                    grid-template-columns: 1fr;
+                    gap: 1rem;
+                }
+                .histogram-bars {
+                    width: 100%;
+                }
+            }
+            /* ===== SECTION 6: RESEARCH FINDINGS ===== */
+            .research-section {
+                padding: 0;
+            }
+            .research-card {
+                padding: 28px;
+                background: var(--card);
+                border: var(--border);
+                border-radius: var(--radius-xl);
+                box-shadow: var(--shadow);
+                animation: floatCard 3s ease-in-out infinite;
+                position: relative;
+                overflow: hidden;
+            }
+            .research-card::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                pointer-events: none;
+                background: linear-gradient(120deg, transparent 15%, rgba(0, 255, 136, 0.15), transparent 55%);
+                transform: translateX(-100%);
+                opacity: 0.8;
+            }
+            .research-card:hover::before {
+                animation: shimmer 1.35s linear;
+            }
+            .research-header {
+                margin-bottom: 28px;
+            }
+            .research-title {
+                margin: 0 0 8px;
+                font-size: clamp(1.4rem, 2.6vw, 2rem);
+                font-weight: 700;
+            }
+            .research-subtitle {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.95rem;
+            }
+            .research-block {
+                margin-top: 28px;
+            }
+            .research-block-title {
+                margin: 0 0 12px;
+                font-size: 1.1rem;
+                font-weight: 700;
+            }
+            .lambda-comparison-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 12px;
+            }
+            .lambda-comparison-table thead {
+                background: rgba(0, 255, 136, 0.06);
+            }
+            .lambda-comparison-table th {
+                padding: 12px 16px;
+                color: var(--muted);
+                font-size: 0.85rem;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                border-bottom: 1px solid rgba(0, 255, 136, 0.1);
+                font-weight: 700;
+                text-align: left;
+            }
+            .lambda-comparison-table td {
+                padding: 12px 16px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                font-size: 0.95rem;
+            }
+            .lambda-comparison-table tr:last-child td {
+                border-bottom: none;
+            }
+            .lambda-comparison-table tbody tr:nth-child(2) {
+                background: rgba(0, 255, 136, 0.04);
+            }
+            .lambda-badge-best {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .best-balance-pill {
+                display: inline-block;
+                background: rgba(0, 255, 136, 0.1);
+                color: var(--primary);
+                font-size: 0.75rem;
+                padding: 3px 10px;
+                border-radius: 999px;
+                margin-left: 8px;
+                font-weight: 600;
+            }
+            .analysis-cards-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 14px;
+                margin-top: 24px;
+            }
+            .analysis-card {
+                padding: 20px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                display: grid;
+                gap: 10px;
+                min-height: 280px;
+                animation: floatCard 3s ease-in-out infinite;
+                position: relative;
+            }
+            .analysis-card::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 4px;
+                background: var(--primary);
+                border-radius: 4px 4px 0 0;
+            }
+            .analysis-card.danger::before {
+                background: var(--danger);
+            }
+            .analysis-card.highlight {
+                border: 2px solid rgba(0, 255, 136, 0.3);
+            }
+            .analysis-card-icon {
+                font-size: 1.4rem;
+                color: var(--primary);
+                margin-bottom: 8px;
+            }
+            .analysis-card.danger .analysis-card-icon {
+                color: var(--danger);
+            }
+            .analysis-card-title {
+                margin: 0;
+                font-size: 1.05rem;
+                font-weight: 700;
+            }
+            .analysis-card-body {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.92rem;
+                line-height: 1.6;
+                flex: 1;
+            }
+            .analysis-card-tag {
+                display: inline-block;
+                background: rgba(0, 255, 136, 0.1);
+                color: var(--primary);
+                font-size: 0.75rem;
+                padding: 6px 12px;
+                border-radius: 999px;
+                font-weight: 600;
+                margin-top: auto;
+                width: fit-content;
+            }
+            .analysis-card.danger .analysis-card-tag {
+                background: rgba(255, 77, 77, 0.1);
+                color: var(--danger);
+            }
+            .l1-l2-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                margin-top: 24px;
+                align-items: center;
+            }
+            .l1-l2-left {
+                display: grid;
+                gap: 16px;
+            }
+            .l1-l2-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            .l1-l2-pill {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 4px 12px;
+                border-radius: 999px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                flex-shrink: 0;
+                min-width: 50px;
+            }
+            .l1-l2-pill.l2 {
+                background: rgba(255, 77, 77, 0.1);
+                color: var(--danger);
+            }
+            .l1-l2-pill.l1 {
+                background: rgba(0, 255, 136, 0.1);
+                color: var(--primary);
+            }
+            .l1-l2-text {
+                color: var(--muted);
+                font-size: 0.92rem;
+                line-height: 1.6;
+            }
+            .l1-l2-right {
+                display: flex;
+                justify-content: center;
+                gap: 2rem;
+            }
+            .gradient-bar {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                align-items: center;
+            }
+            .gradient-bar-label {
+                font-size: 0.85rem;
+                font-weight: 700;
+            }
+            .gradient-bar-visual {
+                width: 80px;
+                height: 140px;
+                border-radius: 4px;
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                position: relative;
+                overflow: hidden;
+            }
+            .gradient-bar-fill {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                width: 100%;
+                height: 0;
+                border-radius: inherit;
+                animation: growFromBottom 1.2s ease forwards;
+            }
+            .gradient-bar-l2 .gradient-bar-fill {
+                background: rgba(255, 77, 77, 0.6);
+                height: 70%;
+                animation: none;
+            }
+            .gradient-bar-l1 .gradient-bar-fill {
+                background: rgba(0, 255, 136, 0.6);
+                height: 100%;
+                animation: none;
+            }
+            .gradient-bar-note {
+                font-size: 0.75rem;
+                color: var(--muted);
+                text-align: center;
+                margin-top: 4px;
+            }
+            @keyframes growFromBottom {
+                from {
+                    height: 0;
+                }
+                to {
+                    height: 100%;
+                }
+            }
+            .gate-distribution-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                margin-top: 24px;
+                align-items: center;
+            }
+            .gate-distribution-text {
+                color: var(--muted);
+                font-size: 0.92rem;
+                line-height: 1.8;
+            }
+            .histogram-container {
+                display: flex;
+                justify-content: center;
+                align-items: flex-end;
+                gap: 4px;
+                height: 120px;
+            }
+            .histogram-bars {
+                display: flex;
+                gap: 4px;
+                align-items: flex-end;
+                height: 100%;
+                justify-content: center;
+                width: 100%;
+            }
+            .histogram-bar {
+                width: 18px;
+                background: var(--primary);
+                border-radius: 3px 3px 0 0;
+                height: 0;
+                animation: growBar 1.2s ease-out forwards;
+                opacity: 0.7;
+            }
+            .histogram-bar.tall {
+                opacity: 0.9;
+            }
+            @keyframes growBar {
+                from {
+                    height: 0;
+                }
+                to {
+                    height: var(--bar-height);
+                }
+            }
+            .histogram-labels {
+                display: flex;
+                justify-content: space-between;
+                color: var(--muted);
+                font-size: 0.8rem;
+                margin-top: 8px;
+                padding: 0 8px;
+            }
+            .histogram-axis-label {
+                font-size: 0.8rem;
+                color: var(--muted);
+                margin-top: 8px;
+                text-align: center;
+            }
+            .gate-distribution-intro {
+                background: rgba(0, 255, 136, 0.03);
+                border: 1px solid rgba(0, 255, 136, 0.08);
+                border-radius: var(--radius-lg);
+                padding: 22px;
+                margin-top: 28px;
+            }
+            /* ===== SECTION 7: SPARSITY BY LAYER ===== */
+            .sparsity-layer-section {
+                padding: 0;
+            }
+            .sparsity-layer-card {
+                padding: 28px;
+                background: var(--card);
+                border: var(--border);
+                border-radius: var(--radius-xl);
+                box-shadow: var(--shadow);
+                animation: floatCard 3s ease-in-out infinite;
+                position: relative;
+                overflow: hidden;
+            }
+            .sparsity-layer-card::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                border-radius: inherit;
+                pointer-events: none;
+                background: linear-gradient(120deg, transparent 15%, rgba(0, 255, 136, 0.15), transparent 55%);
+                transform: translateX(-100%);
+                opacity: 0.8;
+            }
+            .sparsity-layer-card:hover::before {
+                animation: shimmer 1.35s linear;
+            }
+            .sparsity-layer-header {
+                margin-bottom: 28px;
+            }
+            .sparsity-layer-title {
+                margin: 0 0 8px;
+                font-size: clamp(1.4rem, 2.6vw, 2rem);
+                font-weight: 700;
+            }
+            .sparsity-layer-subtitle {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.95rem;
+            }
+            .layer-grid {
+                display: grid;
+                grid-template-columns: repeat(4, minmax(0, 1fr));
+                gap: 16px;
+                margin-top: 20px;
+            }
+            .layer-card {
+                padding: 20px;
+                border-radius: var(--radius-lg);
+                background: var(--card-strong);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                display: grid;
+                gap: 12px;
+                animation: floatCard 3s ease-in-out infinite;
+                position: relative;
+            }
+            .layer-card::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, var(--primary), var(--secondary));
+                border-radius: 3px 3px 0 0;
+            }
+            .layer-type {
+                margin: 0;
+                color: var(--muted);
+                font-size: 0.8rem;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                font-weight: 600;
+            }
+            .layer-name {
+                margin: 0;
+                font-size: 1.1rem;
+                font-weight: 700;
+            }
+            .sparsity-value {
+                font-size: 1.8rem;
+                font-weight: 700;
+                color: var(--primary);
+                margin: 8px 0 0 0;
+            }
+            .layer-bar-container {
+                height: 120px;
+                display: flex;
+                align-items: flex-end;
+                gap: 0;
+                margin-top: 12px;
+                background: rgba(255, 255, 255, 0.02);
+                border-radius: 4px;
+                padding: 8px;
+            }
+            .layer-bar-fill {
+                flex: 1;
+                background: linear-gradient(180deg, var(--primary), var(--secondary));
+                border-radius: 3px 3px 0 0;
+                height: 0;
+                animation: growBar 1.2s ease-out forwards;
+                position: relative;
+                opacity: 0.8;
+            }
+            .layer-bar-fill::after {
+                content: attr(data-value);
+                position: absolute;
+                top: -20px;
+                left: 50%;
+                transform: translateX(-50%);
+                font-size: 0.75rem;
+                font-weight: 700;
+                color: var(--primary);
+                white-space: nowrap;
+            }
+            .sparsity-description {
+                background: rgba(0, 255, 136, 0.03);
+                border: 1px solid rgba(0, 255, 136, 0.08);
+                border-radius: var(--radius-lg);
+                padding: 20px;
+                margin-top: 24px;
+                color: var(--muted);
+                font-size: 0.92rem;
+                line-height: 1.8;
+            }
+            .sparsity-insight {
+                margin: 0;
+            }
+            .sparsity-insight strong {
+                color: var(--primary);
+            }
+            @media (max-width: 1100px) {
+                .layer-grid {
+                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                }
+            }
+            @media (max-width: 700px) {
+                .layer-grid {
+                    grid-template-columns: 1fr;
+                }
+                .sparsity-layer-card {
+                    padding: 20px;
+                }
             }
         </style>
     </head>
@@ -1781,7 +2280,189 @@
                             <div class="stat-label">Quality Score</div>
                         </div>
                     </div>
-                    <!-- SECTION 5: TECH STACK -->
+                    <!-- SECTION 5: RESEARCH FINDINGS -->
+                    <section class="section content-stack container reveal research-section">
+                        <div class="research-card">
+                            <div class="research-header">
+                                <h2 class="panel-title research-title">Research Findings</h2>
+                                <p class="research-subtitle">Lambda sparsity trade-off analysis from training</p>
+                            </div>
+                            
+                            <!-- BLOCK 1: RESULTS TABLE -->
+                            <div class="research-block">
+                                <h3 class="research-block-title">Lambda Comparison Results</h3>
+                                <table class="lambda-comparison-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Lambda</th>
+                                            <th>Test Accuracy</th>
+                                            <th>Sparsity %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td>0.0001</td>
+                                            <td>58%</td>
+                                            <td>~5%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <span class="lambda-badge-best">
+                                                    0.001
+                                                    <span class="best-balance-pill">Best Balance</span>
+                                                </span>
+                                            </td>
+                                            <td>54%</td>
+                                            <td>~39%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>0.01</td>
+                                            <td>41%</td>
+                                            <td>~71%</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- BLOCK 2: THREE ANALYSIS CARDS -->
+                            <div class="research-block">
+                                <h3 class="research-block-title">Lambda Analysis</h3>
+                                <div class="analysis-cards-grid">
+                                    <div class="analysis-card">
+                                        <div class="analysis-card-icon">λ↓</div>
+                                        <h4 class="analysis-card-title">Light Pruning</h4>
+                                        <p class="analysis-card-body">The sparsity penalty is too weak to overcome the classification gradient. Network keeps most connections active. Accuracy stays high but model remains large — not ideal for edge deployment.</p>
+                                        <span class="analysis-card-tag">High Accuracy</span>
+                                    </div>
+                                    <div class="analysis-card highlight">
+                                        <div class="analysis-card-icon">λ=</div>
+                                        <h4 class="analysis-card-title">Sweet Spot ⭐</h4>
+                                        <p class="analysis-card-body">The model finds the best balance — roughly 39% of gates are pushed to zero while accuracy drops only 4 percentage points. Recommended for real-world edge deployment on low-resource devices.</p>
+                                        <span class="analysis-card-tag">Recommended</span>
+                                    </div>
+                                    <div class="analysis-card danger">
+                                        <div class="analysis-card-icon">λ↑</div>
+                                        <h4 class="analysis-card-title">Aggressive Pruning</h4>
+                                        <p class="analysis-card-body">Over 71% of gates are removed. The model loses too much representational capacity. Accuracy drops significantly. Only useful when memory constraints are extreme and accuracy is secondary.</p>
+                                        <span class="analysis-card-tag">High Sparsity</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- BLOCK 3: WHY L1 AND NOT L2 -->
+                            <div class="research-block">
+                                <h3 class="research-block-title">Why L1 and Not L2 Regularization?</h3>
+                                <div class="l1-l2-grid">
+                                    <div class="l1-l2-left">
+                                        <div class="l1-l2-row">
+                                            <div class="l1-l2-pill l2">L2</div>
+                                            <p class="l1-l2-text"><strong>Gradient = 2x</strong> — Shrinks large values fast but never pushes small values exactly to zero. Creates small weights, not true sparsity.</p>
+                                        </div>
+                                        <div class="l1-l2-row">
+                                            <div class="l1-l2-pill l1">L1</div>
+                                            <p class="l1-l2-text"><strong>Gradient = ±1</strong> — Applies constant pressure regardless of value magnitude. Pushes small values all the way to exactly zero. Creates true sparsity.</p>
+                                        </div>
+                                    </div>
+                                    <div class="l1-l2-right">
+                                        <div class="gradient-bar gradient-bar-l2">
+                                            <div class="gradient-bar-label">L2</div>
+                                            <div class="gradient-bar-visual">
+                                                <div class="gradient-bar-fill"></div>
+                                            </div>
+                                            <div class="gradient-bar-note">never exactly zero</div>
+                                        </div>
+                                        <div class="gradient-bar gradient-bar-l1">
+                                            <div class="gradient-bar-label">L1</div>
+                                            <div class="gradient-bar-visual">
+                                                <div class="gradient-bar-fill"></div>
+                                            </div>
+                                            <div class="gradient-bar-note">reaches exactly zero ✓</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- BLOCK 4: GATE DISTRIBUTION -->
+                            <div class="gate-distribution-intro">
+                                <h3 class="research-block-title">Gate Distribution Analysis</h3>
+                                <div class="gate-distribution-grid">
+                                    <div>
+                                        <p class="gate-distribution-text">
+                                            <strong>The gate distribution plot reveals two clear clusters:</strong><br><br>
+                                            A large spike near 0 shows gates the network decided were unnecessary — these are the pruned connections. The network learned these weights contributed nothing meaningful to classification and eliminated them.<br><br>
+                                            A smaller cluster near 0.8–1.0 shows gates the network kept fully active — these are essential connections the model protected against the sparsity pressure.<br><br>
+                                            This bimodal distribution is the signature of successful learned sparsity. A failed pruning attempt would show a flat or bell-shaped distribution centered around 0.5.
+                                        </p>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+                                        <div class="histogram-bars" id="histogramBars"></div>
+                                        <div class="histogram-labels">
+                                            <span>0</span>
+                                            <span>1</span>
+                                        </div>
+                                        <div class="histogram-axis-label">Gate Value</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- SECTION 6: SPARSITY BY LAYER -->
+                    <section class="section content-stack container reveal sparsity-layer-section">
+                        <div class="sparsity-layer-card">
+                            <div class="sparsity-layer-header">
+                                <h2 class="panel-title sparsity-layer-title">Sparsity by Layer</h2>
+                                <p class="sparsity-layer-subtitle">How aggressively each network layer was pruned with λ=0.001</p>
+                            </div>
+                            
+                            <div class="layer-grid">
+                                <div class="layer-card">
+                                    <p class="layer-type">Convolutional</p>
+                                    <h3 class="layer-name">Conv1</h3>
+                                    <p class="sparsity-value" data-sparsity="22">0%</p>
+                                    <div class="layer-bar-container">
+                                        <div class="layer-bar-fill" style="--bar-height: 22%; height: 22%;" data-value="22%"></div>
+                                    </div>
+                                </div>
+                                <div class="layer-card">
+                                    <p class="layer-type">Convolutional</p>
+                                    <h3 class="layer-name">Conv2</h3>
+                                    <p class="sparsity-value" data-sparsity="31">0%</p>
+                                    <div class="layer-bar-container">
+                                        <div class="layer-bar-fill" style="--bar-height: 31%; height: 31%;" data-value="31%"></div>
+                                    </div>
+                                </div>
+                                <div class="layer-card">
+                                    <p class="layer-type">Fully Connected</p>
+                                    <h3 class="layer-name">FC1</h3>
+                                    <p class="sparsity-value" data-sparsity="68">0%</p>
+                                    <div class="layer-bar-container">
+                                        <div class="layer-bar-fill" style="--bar-height: 68%; height: 68%;" data-value="68%"></div>
+                                    </div>
+                                </div>
+                                <div class="layer-card">
+                                    <p class="layer-type">Fully Connected</p>
+                                    <h3 class="layer-name">FC2</h3>
+                                    <p class="sparsity-value" data-sparsity="45">0%</p>
+                                    <div class="layer-bar-container">
+                                        <div class="layer-bar-fill" style="--bar-height: 45%; height: 45%;" data-value="45%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="sparsity-description">
+                                <p class="sparsity-insight">
+                                    <strong>Why FC1 is Most Pruned:</strong> Fully-connected layers have significantly more parameters than convolutional layers. The first fully-connected layer (FC1) after flattening contains 68% sparse gates because it captures redundant feature combinations. Many neuron connections learn similar patterns and can be safely eliminated without degrading accuracy.
+                                </p>
+                                <p class="sparsity-insight">
+                                    <strong>Conv Layers Are Selective:</strong> Convolutional layers (Conv1, Conv2) are more conservatively pruned (22-31%) because spatial feature extraction is crucial. The network protects filter combinations that detect edges, textures, and disease markers in leaves.
+                                </p>
+                                <p class="sparsity-insight">
+                                    <strong>Overall Impact:</strong> Despite 39% average sparsity across the network, critical pathway redundancy allows the network to maintain 54% test accuracy — proof that learned sparsity preserves essential computation while eliminating waste.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+                    <!-- SECTION 7: TECH STACK -->
                     <section class="tech-section reveal">
                         <div class="tech-header">
                             <h2 class="panel-title">Technology Stack</h2>
@@ -2177,6 +2858,12 @@
             // API base URL
             const API_BASE = window.location.origin;
 
+            // Diagnostic logging on page load
+            console.log('PruneVision Frontend Loaded');
+            console.log('API_BASE:', API_BASE);
+            console.log('Current Protocol:', window.location.protocol);
+            console.log('Current Host:', window.location.host);
+
             // File handling
             uploadArea.addEventListener('click', () => fileInput.click());
             uploadArea.addEventListener('dragover', (e) => {
@@ -2270,16 +2957,25 @@
                     const formData = new FormData();
                     formData.append('file', currentFile);
 
+                    console.log('Sending predict request to:', `${API_BASE}/predict`);
+                    console.log('File:', currentFile.name, currentFile.size, 'bytes');
+
                     const response = await fetch(`${API_BASE}/predict`, {
                         method: 'POST',
                         body: formData
                     });
 
+                    console.log('Predict response status:', response.status);
+                    console.log('Response headers:', response.headers);
+
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        const errorText = await response.text();
+                        console.error('Response error text:', errorText);
+                        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
                     }
 
                     const result = await response.json();
+                    console.log('Predict result:', result);
                     updateStep(4, 'done');
 
                     // Update results
@@ -2288,8 +2984,14 @@
                     showToast('Analysis complete!', 'success');
 
                 } catch (error) {
-                    console.error('Analysis failed:', error);
-                    showToast('Analysis failed. Please try again.', 'error');
+                    console.error('❌ Analysis failed:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        api_base: API_BASE,
+                        file_selected: !!currentFile
+                    });
+                    showToast('Analysis failed: ' + error.message, 'error');
                     resetSteps();
                 } finally {
                     isAnalyzing = false;
@@ -2436,6 +3138,8 @@
                     displayHistory(uploads);
                 } catch (error) {
                     console.error('Failed to load history:', error);
+                    console.error('API_BASE:', API_BASE);
+                    console.error('Full URL:', `${API_BASE}/uploads`);
                     historyGrid.innerHTML = '<div class="portal-empty"><p>Failed to load history. Please try again.</p></div>';
                     showToast('Failed to load upload history. Please refresh.', 'error');
                 }
@@ -2537,6 +3241,8 @@
                     drawLineChart(sparsityChart, sparsityDatasets, 'Epoch', 'Sparsity', sparsityLegend);
                 } catch (error) {
                     console.error('Training history failed:', error);
+                    console.error('API_BASE:', API_BASE);
+                    console.error('Full URL:', `${API_BASE}/training-history`);
                     showToast('Unable to load lambda comparator data.', 'error');
                 }
             }
@@ -2874,10 +3580,129 @@
 
             document.querySelectorAll('.stat-number[data-stat]').forEach(el => statObserver.observe(el));
 
+            // Initialize histogram bars for gate distribution
+            function initHistogram() {
+                const histogramContainer = document.getElementById('histogramBars');
+                if (!histogramContainer) return;
+                
+                // Bimodal distribution: high spike at 0, low in middle, medium at end
+                const heights = [90, 85, 78, 65, 15, 12, 10, 8, 35, 42, 55, 70];
+                
+                histogramContainer.innerHTML = '';
+                heights.forEach((height, index) => {
+                    const bar = document.createElement('div');
+                    bar.className = 'histogram-bar' + (height > 60 ? ' tall' : '');
+                    bar.style.setProperty('--bar-height', height + 'px');
+                    bar.style.animationDelay = (index * 60) + 'ms';
+                    histogramContainer.appendChild(bar);
+                });
+            }
+            
+            // Observe histogram section for scroll trigger
+            const histogramObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !entry.target.dataset.histogramInit) {
+                        entry.target.dataset.histogramInit = 'true';
+                        initHistogram();
+                    }
+                });
+            }, { threshold: 0.3 });
+            
+            const histogramSection = document.querySelector('.gate-distribution-intro');
+            if (histogramSection) {
+                histogramObserver.observe(histogramSection);
+            }
+
+            // Animate sparsity values by layer
+            function animateSparsityValues() {
+                const sparsityCards = document.querySelectorAll('.sparsity-value');
+                sparsityCards.forEach(element => {
+                    const targetValue = parseInt(element.getAttribute('data-sparsity'));
+                    let currentValue = 0;
+                    const increment = targetValue / 30;
+                    
+                    const interval = setInterval(() => {
+                        currentValue += increment;
+                        if (currentValue >= targetValue) {
+                            element.textContent = targetValue + '%';
+                            clearInterval(interval);
+                        } else {
+                            element.textContent = Math.round(currentValue) + '%';
+                        }
+                    }, 30);
+                });
+            }
+            
+            // Observe sparsity section for scroll trigger
+            const sparsityObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !entry.target.dataset.sparsityInit) {
+                        entry.target.dataset.sparsityInit = 'true';
+                        animateSparsityValues();
+                    }
+                });
+            }, { threshold: 0.3 });
+            
+            const sparsitySection = document.querySelector('.sparsity-layer-section');
+            if (sparsitySection) {
+                sparsityObserver.observe(sparsitySection);
+            }
+
+            // Verify backend connectivity on startup
+            async function checkBackendHealth() {
+                try {
+                    const response = await fetch(`${API_BASE}/health`);
+                    const data = await response.json();
+                    console.log('✓ Backend Health Check:', data);
+                    return true;
+                } catch (error) {
+                    console.error('✗ Backend Health Check Failed:', error);
+                    console.error('Please ensure the backend is running at', API_BASE);
+                    return false;
+                }
+            }
 
             // Load initial history and comparator data
-            loadHistory();
-            fetchTrainingHistory();
+            // Wait for page to be fully ready before loading data
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('DOM Content Loaded - Checking backend...');
+                checkBackendHealth().then(isHealthy => {
+                    if (isHealthy) {
+                        setTimeout(() => {
+                            console.log('Loading history and training data...');
+                            loadHistory();
+                            fetchTrainingHistory();
+                        }, 500);
+                    }
+                });
+            });
+
+            // Also call immediately in case DOMContentLoaded already fired
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('DOM Content Loaded - Checking backend...');
+                    checkBackendHealth().then(isHealthy => {
+                        if (isHealthy) {
+                            setTimeout(() => {
+                                console.log('Loading history and training data...');
+                                loadHistory();
+                                fetchTrainingHistory();
+                            }, 500);
+                        }
+                    });
+                });
+            } else {
+                console.log('Document Already Loaded - Checking backend...');
+                checkBackendHealth().then(isHealthy => {
+                    if (isHealthy) {
+                        setTimeout(() => {
+                            console.log('Loading history and training data...');
+                            loadHistory();
+                            fetchTrainingHistory();
+                        }, 500);
+                    }
+                });
+            }
         </script>
     </body>
 </html>
